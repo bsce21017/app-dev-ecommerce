@@ -5,21 +5,20 @@ import CustomTextInput from './../components/CustomTextInput';
 import PromoCard from "./../components/card";
 import { ScrollView } from 'react-native-gesture-handler';
 
-const FlashSale = () => {
+const FlashSale = ({ upperBar, BottomBar, showIcon, bottomBarText, bottomBarColor }) => {
   return (
     <View>
-      <Text style={styles.sectionTitle}>Flash Sale</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.flashSale}>
         {Array(4).fill(null).map((_, index) => (
           <TouchableOpacity key={index} style={styles.productCard}>
             <ImageBackground source={require("./../../assets/frame.png")} imageStyle={styles.image} style={styles.productImage}>
-              <Text style={styles.price}>PKR 560.00</Text>
-              <View style={styles.discountContainer}>
-                <View style={styles.discountBanner}>
-                  <Icon name="whatshot" size={17} color="black" />
-                  <Text style={styles.discountText}> 50% OFF</Text>
+              {upperBar && <Text style={styles.price}>PKR 560.00</Text>}
+              {BottomBar && <View style={styles.discountContainer}>
+                <View style={[styles.discountBanner, { backgroundColor: bottomBarColor }]}>
+                  {showIcon && <Icon name="whatshot" size={17} color="black" />}
+                  <Text style={styles.discountText}>{bottomBarText}</Text>
                 </View>
-              </View>
+              </View>}
             </ImageBackground>
           </TouchableOpacity>
         ))}
@@ -49,7 +48,14 @@ const HomeScreen = () => {
             <PromoCard smallText={"Finest Quality"} MiddleText={"Secure Payment"} LargeText={"24/7 Support"} simple={true} name1={"verified"} name2={"credit-score"} name3={"support-agent"} />
           </View>
         </ScrollView>
-        <FlashSale />
+        <View>
+          <Text style={styles.sectionTitle}>Flash Sale</Text>
+          <FlashSale upperBar={true} BottomBar={true} bottomBarText={"50% OFF"} showIcon={true} bottomBarColor={'#F0C14B'} />
+        </View>
+        <View>
+          <Text style={styles.sectionTitle}>Categories</Text>
+          <FlashSale upperBar={false} BottomBar={true} bottomBarText={"Tools"} showIcon={false} bottomBarColor={'white'} />
+        </View>
       </View>
     </View>
   )
@@ -105,8 +111,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     columnGap: 10,
   },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#F0C14B', marginBottom: 10 },
-  flashSale: { flexDirection: 'row' },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#F0C14B',
+    // marginBottom: 10
+  },
+
+  flashSale: {
+    flexDirection: 'row'
+  },
 
   productCard: {
     width: 100,
@@ -156,9 +170,12 @@ const styles = StyleSheet.create({
   },
 
   discountBanner: {
+    width: 80,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0C14B',
+    // backgroundColor: '#F0C14B',
+    alignSelf: "center",
+    justifyContent: "center",
     // paddingVertical: 6,
     // paddingHorizontal: 12,
     borderRadius: 10,
@@ -173,6 +190,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
     color: 'black',
+    textAlign: "center",
     marginLeft: 5
   }
 
