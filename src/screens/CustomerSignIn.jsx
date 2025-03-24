@@ -55,10 +55,11 @@ const styles = StyleSheet.create({
         textAlign: "center",
     },
     button: {
+        marginTop: 20,
         backgroundColor: '#F0C14B',
         // padding: 12,
         borderRadius: 8,
-        marginVertical: 8,
+        // marginVertical: 20,
         width: '100%',
         alignItems: 'center',
     },

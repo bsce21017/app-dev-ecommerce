@@ -14,7 +14,7 @@ const SellerSignUp = ({navigation}) => {
                 <TextInput placeholder="Password" style={styles.input} placeholderTextColor="#888" secureTextEntry />
                 <TextInput placeholder="Category" style={styles.input} placeholderTextColor="#888" />
 
-                <TouchableOpacity style={styles.submitButton} onPress={() => navigation.navigate("Home")}>
+                <TouchableOpacity style={styles.submitButton} onPress={() => navigation.navigate("")}>
                     <Text style={styles.submitButtonText}>SUBMIT</Text>
                 </TouchableOpacity>
             </View>
@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
     },
     subtitle: {
         color: 'gray',
-        fontSize: 10,
+        fontSize: 11,
         marginBottom: 20,
         textAlign: "center",
 
@@ -90,6 +90,7 @@ const styles = StyleSheet.create({
     },
     submitButton: {
         backgroundColor: '#F0C14B',
+        marginTop: 20,
         // padding: 12,
         borderRadius: 8,
         width: '100%',
