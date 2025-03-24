@@ -1,7 +1,7 @@
 import { Text, StyleSheet, View, ImageBackground } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons"
 
-const PromoCard = ({ imagePath, smallText, MiddleText, LargeText, simple, name1, name2, name3 }) => {
+const PromoCard = ({ imagePath, smallText, MiddleText, MiddleNormal, LargeText, simple, name1, name2, name3 }) => {
   const SimpleCard = () => {
     return (
       <View style={styles.card}>
@@ -30,6 +30,7 @@ const PromoCard = ({ imagePath, smallText, MiddleText, LargeText, simple, name1,
           <View style={styles.textContainer}>
             <Text style={styles.smallText}>{smallText}</Text>
             <Text style={styles.largeText}>{MiddleText}</Text>
+            {MiddleNormal &&<Text style={styles.smallText}>{MiddleNormal}</Text>}
             <Text style={styles.largeText}>{LargeText}</Text>
           </View>
         </ImageBackground>
@@ -44,8 +45,9 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderRadius: 12,
     overflow: "hidden",
-    height: 100,
-    width: 100,
+    marginRight: -3,
+    height: 82,
+    width: 81,
     // marginVertical: 10,
   },
   imageBackground: {
@@ -83,7 +85,7 @@ const styles = StyleSheet.create({
   },
   largeText: {
     color: "#F8E6B5",
-    fontSize: 9,
+    fontSize: 10,
     lineHeight: 9,
     fontWeight: "bold",
     letterSpacing: 1,
