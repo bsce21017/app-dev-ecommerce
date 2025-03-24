@@ -148,7 +148,7 @@ const HomeScreen = () => {
         </View>
 
         <View>
-          <Text style={styles.sectionTitle}>More To Love</Text>
+          <Text style={styles.sectionTitle}>The Items You Deserve</Text>
           <Cards
             data={moreToLoveData}
             upperBar={true}
