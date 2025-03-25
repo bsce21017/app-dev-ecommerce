@@ -11,13 +11,13 @@ const CustomerSignIn = ({navigation}) => {
                 <TextInput placeholder="Your Name" style={styles.input} placeholderTextColor="#888" />
                 <TextInput placeholder="Email" style={styles.input} placeholderTextColor="#888" keyboardType="email-address" />
                 <TextInput placeholder="Password" style={styles.input} placeholderTextColor="#888" secureTextEntry />
-                <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("Home")}>
+                <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("UserHome")}>
                     <Text style={styles.buttonText}>SIGN UP</Text>
                 </TouchableOpacity>
 
                 <Text style={styles.orText}>OR</Text>
 
-                <TouchableOpacity style={styles.googleButton} onPress={() => navigation.navigate("Home")}>
+                <TouchableOpacity style={styles.googleButton} onPress={() => navigation.navigate("UserHome")}>
                     <Text style={styles.googleButtonText}>CONTINUE WITH GOOGLE</Text>
                 </TouchableOpacity>
             </View>

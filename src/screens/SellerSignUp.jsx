@@ -14,7 +14,7 @@ const SellerSignUp = ({navigation}) => {
                 <TextInput placeholder="Password" style={styles.input} placeholderTextColor="#888" secureTextEntry />
                 <TextInput placeholder="Category" style={styles.input} placeholderTextColor="#888" />
 
-                <TouchableOpacity style={styles.submitButton} onPress={() => navigation.navigate("")}>
+                <TouchableOpacity style={styles.submitButton} onPress={() => navigation.navigate("SellerHome")}>
                     <Text style={styles.submitButtonText}>SUBMIT</Text>
                 </TouchableOpacity>
             </View>
