@@ -3,7 +3,8 @@ import { StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import SellerStore from './screens/SellerStore';
-import ChatScreen from './screens/UserChatScreen';
+import ChatScreen from './screens/ChatScreen';
+import Tools from './screens/Tools';
 
 const Tab = createBottomTabNavigator();
 
@@ -25,7 +26,7 @@ const BottomNavbar = () => {
             })}
         >
             <Tab.Screen name="Store" component={SellerStore} options={{ headerShown: false }} />
-            <Tab.Screen name="Tools" component={SellerStore} options={{ headerShown: false }} />
+            <Tab.Screen name="Tools" component={Tools} options={{ headerShown: false }} />
             <Tab.Screen name="Chats" component={ChatScreen} options={{ headerShown: false }} />
         </Tab.Navigator>
     );

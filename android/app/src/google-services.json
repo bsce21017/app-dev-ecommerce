@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "644085462749",
+    "project_id": "ecom-proj1-70b9c",
+    "storage_bucket": "ecom-proj1-70b9c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:644085462749:android:5f284ab40efe077bf34d34",
+        "android_client_info": {
+          "package_name": "com.zidfazid"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "644085462749-u6ndisv8ok21v2b5cldvn84fun16fbqc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.zidfazid",
+            "certificate_hash": "e384d2fec3456fa60c3dff02dc5c45ceee56dec5"
+          }
+        },
+        {
+          "client_id": "644085462749-s7eaf0n5r2l6sg6a06nmutopo692bqi0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAlTYiMhReRDsGbC_uPITNOBrVQMFCN-og"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "644085462749-s7eaf0n5r2l6sg6a06nmutopo692bqi0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -6,7 +6,7 @@ const SellerSignUp = ({navigation}) => {
         <View style={styles.container}>
             <View style={styles.box}>
                 <Text style={styles.title}>Welcome</Text>
-                <Text style={styles.subtitle}>SIGN UP TO OWN THE ISLAMIC ART</Text>
+                <Text style={styles.subtitle}>SIGN UP TO OWN THE ART</Text>
 
                 <TextInput placeholder="Store Name" style={styles.input} placeholderTextColor="#888" />
                 <TextInput placeholder="Seller's Name" style={styles.input} placeholderTextColor="#888" />

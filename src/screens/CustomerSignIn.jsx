@@ -1,12 +1,20 @@
 import React from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import { db, auth, WEB_CLIENT_ID } from "../../firebaseConfig"
+import { signInWithCredential, GoogleAuthProvider } from 'firebase/auth';
 
 const CustomerSignIn = ({navigation}) => {
+    // useEffect(() => {WEB_CLIENT_ID
+    //     GoogleSignin.configure({
+    //         web
+    //     })
+    // })
+
     return (
         <View style={styles.container}>
             <View style={styles.box}>
                 <Text style={styles.title}>Welcome</Text>
-                <Text style={styles.subtitle}>SIGN UP TO OWN THE ISLAMIC ART</Text>
+                <Text style={styles.subtitle}>SIGN UP TO OWN THE ART</Text>
 
                 <TextInput placeholder="Your Name" style={styles.input} placeholderTextColor="#888" />
                 <TextInput placeholder="Email" style={styles.input} placeholderTextColor="#888" keyboardType="email-address" />
