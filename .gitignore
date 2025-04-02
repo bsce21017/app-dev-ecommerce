@@ -60,6 +60,7 @@ index.bundle
 # Firebase or Google Services
 android/app/google-services.json
 ios/GoogleService-Info.plist
+firebaseConfig.js
 
 # Lockfiles
 package-lock.json
