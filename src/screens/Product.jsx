@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, Image, Pressable, flex, StyleSheet, ImageBackground } from 'react-native';
+import { View, Text, FlatList, Image, Pressable, StyleSheet, ImageBackground } from 'react-native';
 import Icon from "react-native-vector-icons/FontAwesome";
 
 const image3 = require('./../../assets/sun.png')
-const image7 = require('./assets/logo.png')
+const image7 = require('./../../assets/logo.png')
 
-const Product = ({ navigation }) => {
-
-
+const Product = ({ }) => {
 
 
   const [dropdownVisible, setDropdownVisible] = useState(false);

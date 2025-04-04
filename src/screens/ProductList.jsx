@@ -3,26 +3,25 @@ import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from "react
 import Icon from "react-native-vector-icons/MaterialIcons";
 
 const ProductList = () => {
-  // Sample product data
   const [products, setProducts] = useState([
     {
       id: "1",
       name: "Wireless Headphones",
-      image: require("./../../assets/sample-product.png"),
+      image: require("./../../assets/frame.png"),
       price: "$50",
       stock: 10,
     },
     {
       id: "2",
       name: "Smart Watch",
-      image: require("./../../assets/sample-product.png"),
+      image: require("./../../assets/frame.png"),
       price: "$120",
       stock: 5,
     },
     {
       id: "3",
       name: "Gaming Mouse",
-      image: require("./../../assets/sample-product.png"),
+      image: require("./../../assets/frame.png"),
       price: "$35",
       stock: 20,
     },

@@ -3,26 +3,30 @@ import { View, Text, StyleSheet, Image, TextInput, TouchableOpacity, ImageBackgr
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import CustomTextInput from './../components/CustomTextInput';
 import PromoCard from "./../components/card";
+import { useNavigation } from '@react-navigation/native';
 
 const Cards = ({ data = [], upperBar, BottomBar, showIcon, bottomBarColor, upperBarColor, gridMode }) => {
+  const navigation = useNavigation()
   const renderItem = ({ item }) => (
+    // <Link screen= {Product} >
     <TouchableOpacity style={[
       styles.productCard,
-      gridMode && styles.gridProductCard 
-    ]}>
+      gridMode && styles.gridProductCard
+    ]}
+      onPress={() => navigation.navigate('Product', { productData: item })}>
       <ImageBackground
         source={item.image || require("./../../assets/frame.png")}
         imageStyle={styles.image}
         style={[
           styles.productImage,
-          gridMode && styles.gridProductImage 
+          gridMode && styles.gridProductImage
         ]}
       >
         {upperBar && (
           <Text style={[
             styles.price,
             { backgroundColor: upperBarColor },
-            gridMode && styles.gridPrice 
+            gridMode && styles.gridPrice
           ]}>
             {item.upperBarText}
           </Text>
@@ -37,7 +41,7 @@ const Cards = ({ data = [], upperBar, BottomBar, showIcon, bottomBarColor, upper
               {showIcon && <Icon name="whatshot" size={gridMode ? 14 : 17} color="black" />}
               <Text style={[
                 styles.discountText,
-                gridMode && styles.gridDiscountText 
+                gridMode && styles.gridDiscountText
               ]}>
                 {item.bottomBarText}
               </Text>
@@ -46,6 +50,7 @@ const Cards = ({ data = [], upperBar, BottomBar, showIcon, bottomBarColor, upper
         )}
       </ImageBackground>
     </TouchableOpacity>
+    // </Link>
   );
 
 
@@ -120,8 +125,8 @@ const HomeScreen = () => {
         </View>
         <View style={styles.cardContainer}>
           <PromoCard imagePath={require("./../../assets/bag.png")} smallText={"Looking \nFor a"} MiddleText={"Perfect"} LargeText={"Gift?"} />
-          <PromoCard imagePath={require("./../../assets/sell-button.png")} smallText={"Want to"} MiddleText={"Sell"} MiddleNormal = {"Your"} LargeText={"Artworks"} />
-          <PromoCard imagePath={require("./../../assets/calligraphy.png")} smallText={"Want Your"} MiddleText={"Wall"} MiddleNormal = {"Decor With"} LargeText={"Artworks"} />
+          <PromoCard imagePath={require("./../../assets/sell-button.png")} smallText={"Want to"} MiddleText={"Sell"} MiddleNormal={"Your"} LargeText={"Artworks"} />
+          <PromoCard imagePath={require("./../../assets/calligraphy.png")} smallText={"Want Your"} MiddleText={"Wall"} MiddleNormal={"Decor With"} LargeText={"Artworks"} />
           <PromoCard smallText={"Finest Quality"} MiddleText={"Secure Payment"} LargeText={"24/7 Support"} simple={true} name1={"verified"} name2={"credit-score"} name3={"support-agent"} />
         </View>
         <View>
@@ -232,8 +237,8 @@ const styles = StyleSheet.create({
   },
 
   gridProductCard: {
-    width: 80,  
-    height: 90, 
+    width: 80,
+    height: 90,
     marginRight: 8,
     marginBottom: 4,
   },
@@ -246,9 +251,9 @@ const styles = StyleSheet.create({
     position: "relative"
   },
 
-    gridProductImage: {
-      height: "85%", 
-    },
+  gridProductImage: {
+    height: "85%",
+  },
 
   image: {
     width: "100%",
@@ -273,8 +278,8 @@ const styles = StyleSheet.create({
   },
 
   gridPrice: {
-    fontSize: 9, 
-    paddingHorizontal: 6, 
+    fontSize: 9,
+    paddingHorizontal: 6,
   },
 
   discountContainer: {
@@ -303,7 +308,7 @@ const styles = StyleSheet.create({
   },
 
   gridDiscountBanner: {
-    width: 70, 
+    width: 70,
     paddingVertical: 3,
   },
 
@@ -316,7 +321,7 @@ const styles = StyleSheet.create({
   },
 
   gridDiscountText: {
-    fontSize: 9, 
+    fontSize: 9,
     marginLeft: 3,
   },
 });

@@ -1,8 +1,11 @@
 import React from "react";
+import { useNavigation } from '@react-navigation/native';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 
-const Tools = ({ navigation }) => {
+const Tools = () => {
+  const navigation = useNavigation();
+
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Tools</Text>
@@ -22,6 +25,13 @@ const Tools = ({ navigation }) => {
             <Icon name="receipt" size={24} color="#F0C14B" />
             <Text style={styles.toolButtonText}>Orders</Text>
           </TouchableOpacity>
+        </View>
+        <View style={styles.buttonRow}>
+        <TouchableOpacity style={styles.toolButton} onPress={() => navigation.navigate("ProductList")}>
+            <Icon name="list" size={24} color="#F0C14B" />
+            <Text style={styles.toolButtonText}>Products</Text>
+          </TouchableOpacity>
+
         </View>
       </View>
     </ScrollView>

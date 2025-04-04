@@ -7,6 +7,9 @@ import CustomerSignIn from './screens/CustomerSignIn';
 import SellerSignUp from './screens/SellerSignUp';
 import BottomTabs from './BottomTabs';
 import BottomNavbar from './SellerBottomNav'
+import Product from './screens/Product';
+import ProductList from './screens/ProductList';
+import AddProduct from './screens/AddProduct';
 
 const App = () => {
     const Stack = createStackNavigator();
@@ -18,6 +21,9 @@ const App = () => {
                 <Stack.Screen name="SellerSignUp" component={SellerSignUp} options={{ headerShown: false }}/>
                 <Stack.Screen name="UserHome" component={BottomTabs} options={{ headerShown: false }} />
                 <Stack.Screen name="SellerHome" component={BottomNavbar} options={{ headerShown: false }} />
+                <Stack.Screen name="Product" component={Product} options={{ headerShown: false }} />
+                <Stack.Screen name="AddProduct" component={AddProduct} options={{ headerShown: false }} />
+                <Stack.Screen name="ProductList" component={ProductList} options={{ headerShown: false }} />
             </Stack.Navigator>
         </NavigationContainer>
     );
