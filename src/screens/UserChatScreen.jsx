@@ -1,50 +1,81 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, SectionList, Image, Pressable, StyleSheet, SafeAreaView } from 'react-native';
+import firestore from '@react-native-firebase/firestore';
 import Icon from "react-native-vector-icons/FontAwesome";
 
 const ChatScreen = ({ navigation }) => {
-  const chatData = [
-    {
-      title: 'Today',
-      data: [
-        { id: '1', storeName: 'Calligraphy Supplies', message: 'Your order has been shipped', image: require('./../../assets/sun.png'), time: '10:30 AM', unread: true },
-        { id: '2', storeName: 'Art Gallery', message: 'New collection available now', image: require('./../../assets/sun.png'), time: '09:15 AM', unread: false },
-      ],
-    },
-    {
-      title: 'Yesterday',
-      data: [
-        { id: '3', storeName: 'English Master', message: 'Your question about the product', image: require('./../../assets/sun.png'), time: '4:20 PM', unread: false },
-        { id: '4', storeName: 'Artist', message: 'Special discount for you', image: require('./../../assets/sun.png'), time: '11:45 AM', unread: false },
-      ],
-    },
-    {
-      title: 'March 8, 2025',
-      data: [
-        { id: '5', storeName: 'Home Decor', message: 'Thank you for your purchase', image: require('./../../assets/sun.png'), time: '2:15 PM', unread: false },
-        { id: '6', storeName: 'Interior', message: 'New arrivals coming soon', image: require('./../../assets/sun.png'), time: '10:00 AM', unread: false },
-      ],
-    },
-  ];
+  const [chatData, setChatData] = useState([]);
+
+  useEffect(() => {
+    const currentUserName = 'Mughees'; 
+
+    const unsubscribe = firestore()
+      .collection('chats')
+      .where('userName', '==', currentUserName)
+      .onSnapshot(snapshot => {
+        const chats = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          chats.push({
+            id: doc.id,
+            storeName: data.storeName || 'Unnamed Store',
+            message: data.lastMessage || '',
+            image: require('./assets/sun.png'),
+            time: data.lastMessageTime?.toDate() || new Date(),
+            unread: data.unread || false,
+          });
+        });
+
+        const groupedChats = groupChatsByDate(chats);
+        setChatData(groupedChats);
+      });
+
+    return () => unsubscribe();
+  }, []);
+
+  const groupChatsByDate = (chats) => {
+    const groups = {};
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+
+    chats.forEach(chat => {
+      const chatDate = chat.time;
+      let title;
+
+      if (isSameDay(chatDate, today)) {
+        title = 'Today';
+      } else if (isSameDay(chatDate, yesterday)) {
+        title = 'Yesterday';
+      } else {
+        title = chatDate.toLocaleDateString();
+      }
+
+      if (!groups[title]) groups[title] = [];
+      groups[title].push(chat);
+    });
+
+    return Object.keys(groups).map(title => ({ title, data: groups[title] }));
+  };
+
+  const isSameDay = (d1, d2) => (
+    d1.getDate() === d2.getDate() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getFullYear() === d2.getFullYear()
+  );
 
   const renderChatItem = ({ item }) => (
     <Pressable 
       style={styles.chatItem}
-      onPress={() => navigation.navigate('ChatConversation', { chatId: item.id })}
+      onPress={() => navigation.navigate('TaskDetail', { chatId: item.id, storeName: item.storeName })}
     >
       <Image source={item.image} style={styles.chatImage} />
       <View style={styles.chatContent}>
         <View style={styles.chatHeader}>
           <Text style={styles.storeName}>{item.storeName}</Text>
-          <Text style={styles.chatTime}>{item.time}</Text>
+          <Text style={styles.chatTime}>{item.time.toLocaleTimeString()}</Text>
         </View>
-        <Text 
-          style={[
-            styles.chatMessage,
-            item.unread && styles.unreadMessage
-          ]}
-          numberOfLines={1}
-        >
+        <Text style={[styles.chatMessage, item.unread && styles.unreadMessage]} numberOfLines={1}>
           {item.message}
         </Text>
       </View>
@@ -61,26 +92,16 @@ const ChatScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Header */}
         <View style={styles.header}>
-          <Pressable 
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Image 
-              source={require('./../../assets/arrow.png')}
-              style={styles.backIcon}
-            />
+          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Image source={require('./assets/arrow.png')} style={styles.backIcon} />
           </Pressable>
-          
           <View style={styles.headerContent}>
             <Text style={styles.headerTitle}>MY CHATS</Text>
             <Text style={styles.chatCount}>{chatData.reduce((acc, curr) => acc + curr.data.length, 0)} CONVERSATIONS</Text>
           </View>
         </View>
-
         <View style={styles.divider} />
-
         <SectionList
           sections={chatData}
           renderItem={renderChatItem}
@@ -88,13 +109,8 @@ const ChatScreen = ({ navigation }) => {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           stickySectionHeadersEnabled={false}
-          showsVerticalScrollIndicator={false}
         />
-
-        <Pressable 
-          style={styles.footerButton}
-          onPress={() => navigation.navigate('NewChat')}
-        >
+        <Pressable style={styles.footerButton} onPress={() => navigation.navigate('NewChat')}>
           <Text style={styles.footerButtonText}>WHATS THE UPDATE</Text>
           <Icon name="arrow-right" size={16} color="black" />
         </Pressable>
@@ -226,4 +242,3 @@ const styles = StyleSheet.create({
 });
 
 export default ChatScreen;
-
