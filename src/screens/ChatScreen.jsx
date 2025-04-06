@@ -1,46 +1,72 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, SectionList, Image, Pressable, StyleSheet, SafeAreaView } from 'react-native';
-import firestore from '@react-native-firebase/firestore';
 import IconM from "react-native-vector-icons/MaterialIcons";
-import Icon from "react-native-vector-icons/FontAwesome";
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { auth, db } from './../../firebaseConfig';
 
 const MyChatsScreen = ({ navigation }) => {
   const [chatData, setChatData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const currentStoreName = 'Metro'; 
+    const user = auth.currentUser;
+    if (!user) {
+      setError('No user logged in');
+      setLoading(false);
+      return;
+    }
 
-    const unsubscribe = firestore()
-      .collection('chats')
-      .where('storeName', '==', currentStoreName)
-      .onSnapshot(snapshot => {
-        const chats = [];
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          chats.push({
-            id: doc.id,
-            userName: data.userName || 'Unnamed User',
-            message: data.lastMessage || '',
-            image: require('./assets/frame.png'),
-            time: data.lastMessageTime?.toDate() || new Date(),
-            unread: data.unread || false,
+    const currentStoreName = 'Metro'; // Replace with dynamic store name if needed
+
+    const chatsQuery = query(
+      collection(db, 'chats'),
+      where('storeName', '==', currentStoreName)
+    );
+
+    const unsubscribe = onSnapshot(
+      chatsQuery,
+      (snapshot) => {
+        try {
+          const chats = [];
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            chats.push({
+              id: doc.id,
+              userName: data.userName || 'Unnamed User',
+              message: data.lastMessage || '',
+              image: require('./../../assets/frame.png'),
+              time: data.lastMessageTime?.toDate() || new Date(),
+              unread: data.unread || false,
+            });
           });
-        });
 
-        const groupedChats = groupChatsByDate(chats);
-        setChatData(groupedChats);
-      });
+          const groupedChats = groupChatsByDate(chats);
+          setChatData(groupedChats);
+          setError(null);
+        } catch (err) {
+          console.error('Error processing chats:', err);
+          setError('Failed to load chats');
+        } finally {
+          setLoading(false);
+        }
+      },
+      (error) => {
+        console.error('Chats snapshot error:', error);
+        setError('Error loading chat data');
+        setLoading(false);
+      }
+    );
 
     return () => unsubscribe();
   }, []);
 
   const groupChatsByDate = (chats) => {
-    const groups = {};
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
 
-    chats.forEach(chat => {
+    const groups = chats.reduce((acc, chat) => {
       const chatDate = chat.time;
       let title;
 
@@ -52,34 +78,44 @@ const MyChatsScreen = ({ navigation }) => {
         title = chatDate.toLocaleDateString();
       }
 
-      if (!groups[title]) groups[title] = [];
-      groups[title].push(chat);
-    });
+      if (!acc[title]) acc[title] = [];
+      acc[title].push(chat);
+      return acc;
+    }, {});
 
-    return Object.keys(groups).map(title => ({ title, data: groups[title] }));
+    return Object.keys(groups).map((title) => ({
+      title,
+      data: groups[title].sort((a, b) => b.time - a.time),
+    }));
   };
 
-  const isSameDay = (d1, d2) => (
+  const isSameDay = (d1, d2) =>
     d1.getDate() === d2.getDate() &&
     d1.getMonth() === d2.getMonth() &&
-    d1.getFullYear() === d2.getFullYear()
-  );
+    d1.getFullYear() === d2.getFullYear();
 
   const renderChatItem = ({ item }) => (
-    <Pressable 
+    <Pressable
       style={styles.chatItem}
-      onPress={() => navigation.navigate('TaskList', { chatId: item.id, userName: item.userName })}
+      onPress={() =>
+        navigation.navigate('TaskList', {
+          chatId: item.id,
+          userName: item.userName,
+        })
+      }
     >
       <Image source={item.image} style={styles.chatImage} />
       <View style={styles.chatContent}>
         <View style={styles.chatHeader}>
           <Text style={styles.userName}>{item.userName}</Text>
           <Text style={styles.chatTime}>
-  {item.time ? item.time.toLocaleTimeString() : '...'}
-</Text>
-
+            {item.time ? item.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'}
+          </Text>
         </View>
-        <Text style={[styles.chatMessage, item.unread && styles.unreadMessage]} numberOfLines={1}>
+        <Text
+          style={[styles.chatMessage, item.unread && styles.unreadMessage]}
+          numberOfLines={1}
+        >
           {item.message}
         </Text>
       </View>
@@ -93,30 +129,58 @@ const MyChatsScreen = ({ navigation }) => {
     </View>
   );
 
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading chats...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Pressable onPress={() => navigation.goBack()}>
+          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
             <IconM name="arrow-back" size={23} color={"white"} />
           </Pressable>
           <View style={styles.headerContent}>
             <Text style={styles.headerTitle}>MY CHATS</Text>
-            <Text style={styles.chatCount}>{chatData.reduce((acc, curr) => acc + curr.data.length, 0)} CONVERSATIONS</Text>
+            <Text style={styles.chatCount}>
+              {chatData.reduce((acc, curr) => acc + curr.data.length, 0)} CONVERSATIONS
+            </Text>
           </View>
         </View>
 
         <View style={styles.divider} />
 
-        <SectionList
-          sections={chatData}
-          renderItem={renderChatItem}
-          renderSectionHeader={renderSectionHeader}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          stickySectionHeadersEnabled={false}
-          showsVerticalScrollIndicator={false}
-        />
+        {chatData.length > 0 ? (
+          <SectionList
+            sections={chatData}
+            renderItem={renderChatItem}
+            renderSectionHeader={renderSectionHeader}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContent}
+            stickySectionHeadersEnabled={false}
+            showsVerticalScrollIndicator={false}
+          />
+        ) : (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No chats found</Text>
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -138,11 +202,6 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: 8,
-  },
-  backIcon: {
-    width: 24,
-    height: 24,
-    tintColor: '#E7C574',
   },
   headerContent: {
     flex: 1,
@@ -223,24 +282,36 @@ const styles = StyleSheet.create({
     backgroundColor: '#E7C574',
     marginLeft: 8,
   },
-  footerButton: {
-    // position: 'absolute',
-    // bottom: 0,
-    // left: 0,
-    // right: 0,
-    backgroundColor: '#E7C574',
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    flexDirection: 'row',
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    height: 50, 
-    justifyContent: 'flex-end',
+    backgroundColor: '#000',
   },
-  footerButtonText: {
-    color: '#000',
-    fontWeight: 'bold',
-    fontSize: 10,
-    marginRight: 8,
+  loadingText: {
+    color: '#E7C574',
+    fontSize: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000',
+    padding: 20,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: '#E7C574',
+    fontSize: 16,
   },
 });
 

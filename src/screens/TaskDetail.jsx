@@ -2,16 +2,27 @@ import React, { useState, useEffect  ,useLayoutEffect} from 'react';
 import { View, Text, TextInput, FlatList, Image, Pressable, StyleSheet } from 'react-native';
 import Icon from "react-native-vector-icons/FontAwesome";
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
-import firestore from '@react-native-firebase/firestore';
+import { 
+  collection, 
+  doc, 
+  onSnapshot, 
+  orderBy, 
+  serverTimestamp, 
+  addDoc, 
+  updateDoc,
+  query
+} from 'firebase/firestore';
+import { db } from './../../firebaseConfig';
 
-const image2 = require('./assets/arrow.png');
+const image2 = require('./../../assets/arrow.png');
 
 const ChatScreen = ({ navigation , route}) => {
   const { chatId, storeName } = route.params;
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
 
-  const messagesRef = firestore().collection('chats').doc(chatId).collection('messages');
+  const chatRef = doc(db, 'chats', chatId);
+  const messagesRef = collection(db, 'chats', chatId, 'messages');
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -25,34 +36,50 @@ const ChatScreen = ({ navigation , route}) => {
   }, [navigation, storeName]);
 
   useEffect(() => {
-    const unsubscribe = messagesRef.orderBy('timestamp', 'asc').onSnapshot(snapshot => {
-      const fetchedMessages = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setMessages(fetchedMessages);
-    });
+    const messagesQuery = query(messagesRef, orderBy('timestamp', 'asc'));
+    
+    const unsubscribe = onSnapshot(messagesQuery, 
+      (snapshot) => {
+        const fetchedMessages = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          timestamp: doc.data().timestamp?.toDate() // Convert timestamp
+        }));
+        setMessages(fetchedMessages);
+      },
+      (error) => {
+        console.error("Error fetching messages:", error);
+        Alert.alert("Error", "Could not load messages");
+      }
+    );
+
     return () => unsubscribe();
   }, [chatId]);
 
   const sendMessage = async () => {
-    if (inputText.trim()) {
-      await messagesRef.add({
+    if (!inputText.trim()) return;
+
+    try {
+      // Add new message
+      await addDoc(messagesRef, {
         text: inputText,
-        sender: 'user',
-        timestamp: firestore.FieldValue.serverTimestamp(),
+        sender: 'user', // Customer sends as 'user'
+        timestamp: serverTimestamp()
       });
 
-      await firestore().collection('chats').doc(chatId).update({
+      // Update chat metadata
+      await updateDoc(chatRef, {
         lastMessage: inputText,
-        lastMessageTime: firestore.FieldValue.serverTimestamp(),
-        unread: true,
+        lastMessageTime: serverTimestamp(),
+        unread: true
       });
 
       setInputText('');
+    } catch (error) {
+      console.error("Error sending message:", error);
+      Alert.alert("Error", "Failed to send message");
     }
   };
-
 
   return (
     <View style={{ flex: 1, backgroundColor: 'black' }}>

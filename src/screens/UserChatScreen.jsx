@@ -1,38 +1,46 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, SectionList, Image, Pressable, StyleSheet, SafeAreaView } from 'react-native';
-import firestore from '@react-native-firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from './../../firebaseConfig';
 import Icon from "react-native-vector-icons/FontAwesome";
 
 const ChatScreen = ({ navigation }) => {
   const [chatData, setChatData] = useState([]);
 
   useEffect(() => {
-    const currentUserName = 'Mughees'; 
-
-    const unsubscribe = firestore()
-      .collection('chats')
-      .where('userName', '==', currentUserName)
-      .onSnapshot(snapshot => {
-        const chats = [];
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          chats.push({
-            id: doc.id,
-            storeName: data.storeName || 'Unnamed Store',
-            message: data.lastMessage || '',
-            image: require('./assets/sun.png'),
-            time: data.lastMessageTime?.toDate() || new Date(),
-            unread: data.unread || false,
-          });
+    const currentUserName = 'abubakar'; 
+  
+    const chatsRef = collection(db, 'chats');
+    const chatsQuery = query(
+      chatsRef,
+      where('userName', '==', currentUserName)
+    );
+  
+    const unsubscribe = onSnapshot(chatsQuery, (snapshot) => {
+      const chats = [];
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        chats.push({
+          id: doc.id,
+          storeName: data.storeName || 'Unnamed Store',
+          message: data.lastMessage || '',
+          image: require('./../../assets/sun.png'),
+          time: data.lastMessageTime?.toDate() || new Date(),
+          unread: data.unread || false,
         });
-
-        const groupedChats = groupChatsByDate(chats);
-        setChatData(groupedChats);
       });
-
+  
+      const groupedChats = groupChatsByDate(chats);
+      setChatData(groupedChats);
+    }, 
+    (error) => {
+      console.error("Error fetching chats:", error);
+      // Handle error appropriately
+    });
+  
     return () => unsubscribe();
   }, []);
-
+  
   const groupChatsByDate = (chats) => {
     const groups = {};
     const today = new Date();
@@ -94,7 +102,7 @@ const ChatScreen = ({ navigation }) => {
       <View style={styles.container}>
         <View style={styles.header}>
           <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Image source={require('./assets/arrow.png')} style={styles.backIcon} />
+            <Image source={require('./../../assets/arrow.png')} style={styles.backIcon} />
           </Pressable>
           <View style={styles.headerContent}>
             <Text style={styles.headerTitle}>MY CHATS</Text>

@@ -1,17 +1,29 @@
 import React, { useState, useEffect ,useLayoutEffect} from 'react';
-import { View, Text, TextInput, FlatList, Image, Pressable, StyleSheet } from 'react-native';
+import { View, Text, TextInput, FlatList, Image, Pressable, StyleSheet, Alert } from 'react-native';
 import Icon from "react-native-vector-icons/FontAwesome";
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
-import firestore from '@react-native-firebase/firestore';
+import { 
+  collection, 
+  doc, 
+  onSnapshot, 
+  orderBy, 
+  serverTimestamp, 
+  addDoc, 
+  updateDoc,
+  query
+} from 'firebase/firestore';
+import { db } from './../../firebaseConfig';
 
-const image2 = require('./assets/arrow.png');
+const image2 = require('./../../assets/arrow.png');
 
 const SellerChatScreen = ({ navigation,route }) => {
   const { chatId, userName } = route.params;
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
 
-  const messagesRef = firestore().collection('chats').doc(chatId).collection('messages');
+// Get references to Firestore collections
+const chatRef = doc(db, 'chats', chatId);
+const messagesRef = collection(db, 'chats', chatId, 'messages');
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -25,26 +37,46 @@ const SellerChatScreen = ({ navigation,route }) => {
   }, [navigation, userName]);
 
   useEffect(() => {
-    const unsubscribe = messagesRef.orderBy('timestamp', 'asc').onSnapshot(snapshot => {
-      const fetchedMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const messagesQuery = query(messagesRef, orderBy('timestamp', 'asc'));
+    
+    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+      const fetchedMessages = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        // Convert Firestore timestamp to JS Date if needed
+        timestamp: doc.data().timestamp?.toDate()
+      }));
       setMessages(fetchedMessages);
+    }, (error) => {
+      console.error("Error fetching messages:", error);
+      Alert.alert("Error", "Could not load messages");
     });
+  
     return () => unsubscribe();
   }, [chatId]);
-
+  
   const sendMessage = async () => {
-    if (inputText.trim()) {
-      await messagesRef.add({
+    if (!inputText.trim()) return;
+  
+    try {
+      // Add new message to subcollection
+      await addDoc(messagesRef, {
         text: inputText,
         sender: 'seller',
-        timestamp: firestore.FieldValue.serverTimestamp(),
+        timestamp: serverTimestamp()
       });
-      await firestore().collection('chats').doc(chatId).update({
+  
+      // Update chat document with last message info
+      await updateDoc(chatRef, {
         lastMessage: inputText,
-        lastMessageTime: firestore.FieldValue.serverTimestamp(),
-        unread: true,
+        lastMessageTime: serverTimestamp(),
+        unread: true
       });
+  
       setInputText('');
+    } catch (error) {
+      console.error("Error sending message:", error);
+      Alert.alert("Error", "Failed to send message");
     }
   };
 

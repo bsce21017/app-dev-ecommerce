@@ -1,22 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
-import { db, auth } from '../../firebaseConfig';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from '../../firebaseConfig';
 
-const SellerSignUp = ({ navigation }) => {
+const SellerSignIn = ({ route, navigation }) => {
     const [form, setForm] = useState({
-        email: '',
+        email: route.params.email || '',
         password: '',
-        businessName: '',
     })
-
-    // const setCustomClaim = async (uid) => {
-    //     // const auth = getAuth();
-    //     await auth.setCustomUserClaims(uid, {
-    //         role: 'seller',
-    //     });
-    // };
 
     const handleSubmit = async () => {
         if (!form.email || !form.password) {
@@ -24,59 +15,27 @@ const SellerSignUp = ({ navigation }) => {
             return;
         }
 
-        try {
-            const userCred = await createUserWithEmailAndPassword(auth, form.email, form.password);
+        
 
-            // await setCustomClaim(userCred.user.uid);
-            // const db = getFirestore();
-            await setDoc(doc(db, 'seller', userCred.user.uid), {
-                businessName: form.businessName,
-                approved: false,
-                email: form.email,
-                createdAt: new Date()
-            });
+    }
 
-            Alert.alert('Success', 'Seller registered!');
-            navigation.navigate('SellerHome')
-        } catch (error) {
-
-            if (error.code === 'auth/email-already-in-use') {
-                signInWithEmailAndPassword(auth, form.email, form.password)
-                    .then((userCredential) => {
-                        const user = userCredential.user;
-                        Alert.alert("User Signed In Successfully")
-                        navigation.navigate("SellerHome")
-                    })
-                    .catch((error) => {
-                        const errorMessage = error.message;
-                        error.code === 'auth/invalid-credential' ? Alert.alert('Error', 'Invalid Password. Please try again.') : Alert.alert('Error', errorMessage);
-                    });
-                return;
-            }
-            console.error('Signup failed:', error);
-            Alert.alert(error.name, error.code);
-        }
-    };
 
     return (
         <View style={styles.container}>
             <View style={styles.box}>
                 <Text style={styles.title}>Welcome</Text>
-                <Text style={styles.subtitle}>LOGIN OR REGISTER</Text>
+                <Text style={styles.subtitle}>LOGIN</Text>
 
-                {/* <TextInput placeholder="Store Name" style={styles.input} placeholderTextColor="#888" value={form.businessName} onChangeText={(value) => setForm({ ...form, businessName: value })} /> */}
                 <TextInput placeholder="Email" style={styles.input} placeholderTextColor="#888" keyboardType="email-address" value={form.email} onChangeText={(value) => setForm({ ...form, email: value })} />
                 <TextInput placeholder="Password" style={styles.input} placeholderTextColor="#888" secureTextEntry value={form.password} onChangeText={(value) => setForm({ ...form, password: value })} />
-                {/* <TextInput placeholder="Category" style={styles.input} placeholderTextColor="#888" /> */}
 
                 <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                    <Text style={styles.submitButtonText}>SIGNUP OR LOGIN</Text>
+                    <Text style={styles.submitButtonText}>LOGIN</Text>
                 </TouchableOpacity>
             </View>
         </View>
-    );
-};
-
+    )
+}
 
 const styles = StyleSheet.create({
     container: {
@@ -156,4 +115,5 @@ const styles = StyleSheet.create({
     },
 });
 
-export default SellerSignUp;
+
+export default SellerSignIn;

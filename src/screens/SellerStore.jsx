@@ -1,9 +1,49 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, SafeAreaView, Pressable } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, SafeAreaView, Pressable, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import IconA from 'react-native-vector-icons/FontAwesome';
+import { useNavigation } from '@react-navigation/native';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from "./../../firebaseConfig"
 
-const SellerStore = ({ navigation }) => {
+const SellerStore = () => {
+    const navigation = useNavigation();
+  
+  const [name, setName] = React.useState('');
+  const [error, setError] = React.useState(null);
+
+  const fetchUserData = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        setError('No user is signed in');
+        return;
+      }
+
+      const userDoc = await getDoc(doc(db, 'seller', user.uid));
+      if (userDoc.exists()) {
+        console.log(userDoc.data())
+        setName(userDoc.data().businessName);
+      } else {
+        setError('No seller document found or not approved');
+      }
+    } catch (err) {
+      if (err.code === 'permission-denied') {
+        setError('You don\'t have permission to view this data');
+      } else {
+        setError('Failed to fetch user data');
+        console.log(error);
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchUserData().then((data) => {
+      Alert.alert(data.businessName);
+      setName(data.businessName);
+    });
+  }, []);
+
   const products = [...Array(6)].map((_, i) => ({
     id: i.toString(),
     name: `Product ${i + 1}`,
@@ -29,8 +69,8 @@ const SellerStore = ({ navigation }) => {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Your Store</Text>
-          
+          <Text style={styles.title}>{name || "Your Store"}</Text>
+
           <Pressable>
             <Icon name="settings" size={24} color="#F0C14B" />
           </Pressable>
@@ -38,7 +78,7 @@ const SellerStore = ({ navigation }) => {
 
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>46</Text>
+            <Text style={styles.statNumber}>{products.length}</Text>
             <Text style={styles.statLabel}>Total Products</Text>
           </View>
           <View style={styles.statItem}>
@@ -52,8 +92,8 @@ const SellerStore = ({ navigation }) => {
         </View>
 
         <View style={styles.section}>
-          <ScrollView 
-            horizontal 
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.orderStatusContainer}
           >
@@ -77,7 +117,7 @@ const SellerStore = ({ navigation }) => {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.addProductButton}>
+        <TouchableOpacity style={styles.addProductButton} onPress={() => navigation.navigate("AddProduct")}>
           <Text style={styles.addProductText}>ADD NEW PRODUCT</Text>
           <Icon name="add-circle" size={24} color="#F0C14B" />
         </TouchableOpacity>

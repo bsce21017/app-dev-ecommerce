@@ -1,11 +1,58 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Switch, ScrollView, StyleSheet, Image, FlatList } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, TextInput, TouchableOpacity, Switch, ScrollView, StyleSheet, Image, FlatList, Alert } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { launchImageLibrary } from 'react-native-image-picker';
+import { collection, doc, getDocs, serverTimestamp, addDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL, getStorage } from 'firebase/storage';
+import { auth, db } from "./../../firebaseConfig"
 
 const AddProduct = () => {
-  const [availability, setAvailability] = useState(true);
+  // const [availability, setAvailability] = useState(true);
   const [images, setImages] = useState([]);
+  const [products, setProducts] = React.useState(0);
+  const [product, setProduct] = React.useState({
+    name: "",
+    price: "",
+    category: "",
+    sales: 0,
+    availability: true,
+  });
+
+  const fetchSellerProducts = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        console.log('No user is signed in');
+        return;
+      }
+
+      const productsCollectionRef = collection(db, 'seller', user.uid, 'products');
+      const querySnapshot = await getDocs(productsCollectionRef);
+
+      if (!querySnapshot.empty) {
+        const productsList = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        // console.log('Fetched products:', productsList.length);
+        setProducts(productsList.length);
+      } else {
+        console.log('No products found for this seller');
+      }
+    } catch (err) {
+      console.error('Full error:', err); 
+      if (err.code === 'permission-denied') {
+        setError('You don\'t have permission to view this data');
+      } else {
+        setError('Failed to fetch products');
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchSellerProducts();
+  }, []);
 
   const importImage = async () => {
     try {
@@ -31,8 +78,74 @@ const AddProduct = () => {
     images.length < 8 ? importImage() : console.log("Maximum Images Selected")
   }
 
+  const handleDraftPress = async () => {
+    if (!product.name || !product.price || !product.category || images.length === 0) {
+      Alert.alert("Error", "Please fill all the required fields and add at least one image");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const user = auth.currentUser;
+      
+      if (!user) {
+        Alert.alert("Error", "No user logged in");
+        return;
+      }
+
+      // 1. Upload images to Firebase Storage
+      const imageUrls = await Promise.all(
+        images.map(async (image) => {
+          const storageRef = ref(storage, `products/${user.uid}/${Date.now()}_${image.fileName}`);
+          await uploadBytes(storageRef, image);
+          return await getDownloadURL(storageRef);
+        })
+      );
+
+      // 2. Add product document to Firestore
+      const productData = {
+        ...product,
+        price: Number(product.price), // Convert string to number
+        images: imageUrls,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        status: "draft",
+        sellerId: user.uid
+      };
+
+      const docRef = await addDoc(
+        collection(db, 'seller', user.uid, 'products'), 
+        productData
+      );
+
+      Alert.alert("Success", "Product saved as draft");
+      console.log("Product added with ID: ", docRef.id);
+      
+      // Reset form after successful submission
+      setProduct({
+        name: "",
+        price: "",
+        category: "",
+        sales: 0,
+        availability: false,
+      });
+      setImages([]);
+
+    } catch (error) {
+      console.error("Error adding product: ", error);
+      Alert.alert("Error", "Failed to save product");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handlePublishPress = () => {
+
+    // console.log("Product Published")
+  }
+
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView contentContainerStyle={styles.scrollContent} style={styles.container}>
       <Text style={styles.title}>Add Product</Text>
 
       <View style={styles.section}>
@@ -41,6 +154,7 @@ const AddProduct = () => {
         {images.length > 0 && (
           <TouchableOpacity style={styles.imagePlaceholder} onPress={enableSelection}>
             <FlatList
+              scrollEnabled={false}
               data={images}
               keyExtractor={(item, index) => index.toString()}
               numColumns={4}
@@ -77,6 +191,7 @@ const AddProduct = () => {
           style={styles.input}
           placeholder="Enter product name"
           placeholderTextColor="gray"
+          onChangeText={(value) => setProduct({ ...product, name: value })}
         />
 
         <Text style={styles.label}>Price *</Text>
@@ -84,19 +199,29 @@ const AddProduct = () => {
           style={styles.input}
           placeholder="Enter product price"
           placeholderTextColor="gray"
+          onChangeText={(value) => setProduct({ ...product, price: value })}
+
+        />
+
+        <Text style={styles.label}>Category *</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Category"
+          placeholderTextColor="gray"
+          onChangeText={(value) => setProduct({ ...product, category: value })}
         />
       </View>
 
       <View style={styles.switchContainer}>
         <Text style={styles.label}>Availability</Text>
         <Switch
-          value={availability}
-          onValueChange={() => setAvailability(!availability)}
+          value={product.availability}
+          onValueChange={(value) => setProduct({ ...product, availability: value })}
         />
       </View>
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.draftButton}>
+        <TouchableOpacity style={styles.draftButton} onPress={handleDraftPress}>
           <Text style={styles.draftButtonText}>Save as Draft</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.publishButton}>
@@ -111,6 +236,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#0B0E13",
+  },
+  scrollContent: {
     paddingHorizontal: 16,
     paddingVertical: 24,
   },
@@ -118,26 +245,27 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     color: "#F0C14B",
-    marginBottom: 16,
+    marginBottom: 0,
   },
   section: {
-    marginTop: 16,
+    marginTop: 0,
     backgroundColor: "#1a1a1a",
     padding: 16,
     borderRadius: 12,
   },
   label: {
     color: "gray",
-    marginBottom: 8,
+    marginBottom: 4,
   },
   imagePlaceholder: {
-    height: 'auto',
+    minHeight: 100, // Ensure it has a minimum height
     borderStyle: "dashed",
     borderWidth: 2,
     borderColor: "gray",
     borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
+    // paddingVertical: 5,
   },
   placeholderText: {
     color: "gray",
