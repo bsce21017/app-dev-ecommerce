@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import HomeScreen from './screens/SellerStore';
 import WelcomeScreen from './screens/WelcomeScreen';
+import CustomerSignUp from './screens/CustomerSignUp';
 import CustomerSignIn from './screens/CustomerSignIn';
 import SellerSignUp from './screens/SellerSignUp';
 import SellerSignIn from './screens/sellerSignIn';
@@ -22,6 +22,7 @@ const App = () => {
             <Stack.Navigator>
                 <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }}/>
                 <Stack.Screen name="CustomerSignIn" component={CustomerSignIn} options={{ headerShown: false }}/>
+                <Stack.Screen name="CustomerSignUp" component={CustomerSignUp} options={{ headerShown: false }}/>
                 <Stack.Screen name="SellerSignUp" component={SellerSignUp} options={{ headerShown: false }}/>
                 <Stack.Screen name="SellerSignIn" component={SellerSignIn} options={{ headerShown: false }}/>
                 <Stack.Screen name="UserHome" component={BottomTabs} options={{ headerShown: false }} />

@@ -11,12 +11,6 @@ const SellerSignUp = ({ navigation }) => {
         businessName: '',
     })
 
-    // const setCustomClaim = async (uid) => {
-    //     // const auth = getAuth();
-    //     await auth.setCustomUserClaims(uid, {
-    //         role: 'seller',
-    //     });
-    // };
 
     const handleSubmit = async () => {
         if (!form.email || !form.password) {
@@ -27,8 +21,6 @@ const SellerSignUp = ({ navigation }) => {
         try {
             const userCred = await createUserWithEmailAndPassword(auth, form.email, form.password);
 
-            // await setCustomClaim(userCred.user.uid);
-            // const db = getFirestore();
             randomBusinessName = `Artist_${Math.floor(Math.random() * 10000)}`;
             await setDoc(doc(db, 'seller', userCred.user.uid), {
                 businessName: randomBusinessName,

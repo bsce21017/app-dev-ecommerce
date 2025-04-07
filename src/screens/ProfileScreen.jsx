@@ -1,8 +1,43 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, Image, Pressable, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import Icon from "react-native-vector-icons/FontAwesome";
+import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { auth, db } from "./../../firebaseConfig";
 
 const ProfileScreen = ({ navigation }) => {
+  const [error, setError] = useState(false);
+  const [name, setName] = useState('');
+
+  const fetchUserData = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        setError('No user is signed in');
+        return;
+      }
+
+      // Fetch seller profile
+      const userDoc = await getDoc(doc(db, 'customers', user.uid));
+      if (userDoc.exists()) {
+        console.log("User data:", userDoc.data());
+        setName(userDoc.data().name);
+      } else {
+        setError('No seller document found');
+      }
+
+
+    } catch (err) {
+      console.error("Fetch error:", err);
+      setError('Failed to load store data');
+    }
+  };
+
+    useEffect(() => {
+      const unsubscribe = navigation.addListener('focus', fetchUserData);
+      fetchUserData();
+      return unsubscribe;
+    }, [navigation]);
+
   const wishlistItems = [
     { id: "1", name: "Calligraphy Set", price: 560, image: require('./../../assets/sun.png') },
     { id: "2", name: "Art Book", price: 340, image: require('./../../assets/sun.png') },
@@ -13,7 +48,7 @@ const ProfileScreen = ({ navigation }) => {
   ];
 
   const renderWishlistItem = ({ item }) => (
-    <Pressable 
+    <Pressable
       style={styles.productCard}
       onPress={() => navigation.navigate('ProductDetail')}
     >
@@ -45,12 +80,12 @@ const ProfileScreen = ({ navigation }) => {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.profileHeader}>
-            <Text style={styles.profileName}>Your Name</Text>
+            <Text style={styles.profileName}>{name || "Your Name"}</Text>
             <Pressable>
               <Icon name="gear" size={20} color="#E7C574" />
             </Pressable>
           </View>
-          
+
           <View style={styles.profileTabs}>
             <Pressable style={styles.profileTab}>
               <Text style={styles.profileTabText}>WISHLIST</Text>
@@ -74,7 +109,7 @@ const ProfileScreen = ({ navigation }) => {
               <Icon name="arrow-right" size={16} color="#E7C574" />
             </Pressable>
           </View>
-          
+
           <View style={styles.orderStatusContainer}>
             {orderStatusItems.map((item, index) => (
               <Pressable key={index} style={styles.orderStatusItem}>

@@ -7,10 +7,10 @@ const WelcomeScreen = ({ navigation }) => {
       <View style={styles.box}>
         <Text style={styles.title}>Welcome</Text>
         <Text style={styles.subtitle}>DIVE INTO THE ISLAMIC ART</Text>
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('CustomerSignIn')}>
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('CustomerSignUp')}>
           <Text style={styles.buttonText}>CONTINUE AS A CUSTOMER</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('SellerSignUp')}>
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('SellerSignIn')}>
           <Text style={styles.buttonText}>CONTINUE AS A SELLER</Text>
         </TouchableOpacity>
       </View>

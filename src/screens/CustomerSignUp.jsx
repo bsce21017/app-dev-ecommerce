@@ -1,36 +1,50 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
-import { auth } from '../../firebaseConfig';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { db, auth } from '../../firebaseConfig';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
-const CustomerSignIn = ({ navigation }) => {
+const CustomerSignUp = ({ navigation }) => {
     const [form, setForm] = useState({
+        name: '',
         email: '',
         password: ''
     });
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleSignIn = async () => {
-        if (!form.email || !form.password) {
+    const handleSignUp = async () => {
+        if (!form.name || !form.email || !form.password) {
             Alert.alert('Error', 'Please fill in all fields');
+            return;
+        }
+
+        if (form.password.length < 6) {
+            Alert.alert('Error', 'Password should be at least 6 characters');
             return;
         }
 
         setIsLoading(true);
 
         try {
-            await signInWithEmailAndPassword(auth, form.email, form.password);
+            // Try to create new user
+            const userCredential = await createUserWithEmailAndPassword(auth, form.email, form.password);
+
+            // Store additional user data in Firestore
+            await setDoc(doc(db, 'customers', userCredential.user.uid), {
+                name: form.name,
+                email: form.email,
+                createdAt: new Date(),
+            });
+
+            Alert.alert('Success', 'Account created successfully!');
             navigation.navigate('UserHome');
         } catch (error) {
-            let errorMessage = 'Sign in failed. Please try again.';
-            
-            if (error.code === 'auth/invalid-credential') {
-                errorMessage = 'Invalid email or password';
-            } else if (error.code === 'auth/too-many-requests') {
-                errorMessage = 'Account temporarily disabled due to too many failed attempts';
+            if (error.code === 'auth/email-already-in-use') {
+                // If email exists, try to sign in
+                console.error('Email already in use:', error);
+            } else {
+                Alert.alert('Error', error.message);
             }
-            
-            Alert.alert('Error', errorMessage);
         } finally {
             setIsLoading(false);
         }
@@ -39,53 +53,60 @@ const CustomerSignIn = ({ navigation }) => {
     return (
         <View style={styles.container}>
             <View style={styles.box}>
-                <Text style={styles.title}>Welcome Back</Text>
-                <Text style={styles.subtitle}>SIGN IN TO YOUR ACCOUNT</Text>
+                <Text style={styles.title}>Welcome</Text>
+                <Text style={styles.subtitle}>SIGN UP TO OWN THE ART</Text>
 
-                <TextInput 
-                    placeholder="Email" 
-                    style={styles.input} 
-                    placeholderTextColor="#888" 
+                <TextInput
+                    placeholder="Your Name"
+                    style={styles.input}
+                    placeholderTextColor="#888"
+                    value={form.name}
+                    onChangeText={(value) => setForm({ ...form, name: value })}
+                />
+                <TextInput
+                    placeholder="Email"
+                    style={styles.input}
+                    placeholderTextColor="#888"
                     keyboardType="email-address"
                     value={form.email}
-                    onChangeText={(value) => setForm({...form, email: value})}
+                    onChangeText={(value) => setForm({ ...form, email: value })}
                     autoCapitalize="none"
                 />
-                <TextInput 
-                    placeholder="Password" 
-                    style={styles.input} 
-                    placeholderTextColor="#888" 
-                    secureTextEntry 
+                <TextInput
+                    placeholder="Password"
+                    style={styles.input}
+                    placeholderTextColor="#888"
+                    secureTextEntry
                     value={form.password}
-                    onChangeText={(value) => setForm({...form, password: value})}
+                    onChangeText={(value) => setForm({ ...form, password: value })}
                     autoCapitalize="none"
                 />
-                <TouchableOpacity 
-                    style={[styles.button, isLoading && styles.disabledButton]} 
-                    onPress={handleSignIn}
+                <TouchableOpacity
+                    style={[styles.button, isLoading && styles.disabledButton]}
+                    onPress={handleSignUp}
                     disabled={isLoading}
                 >
                     <Text style={styles.buttonText}>
-                        {isLoading ? 'PLEASE WAIT...' : 'SIGN IN'}
+                        {isLoading ? 'PLEASE WAIT...' : 'SIGN UP'}
                     </Text>
                 </TouchableOpacity>
 
                 <Text style={styles.orText}>OR</Text>
 
-                <TouchableOpacity 
-                    style={styles.googleButton} 
+                <TouchableOpacity
+                    style={styles.googleButton}
                     onPress={() => navigation.navigate("UserHome")}
                     disabled={isLoading}
                 >
                     <Text style={styles.googleButtonText}>CONTINUE WITH GOOGLE</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity 
-                    style={styles.signUpLink} 
-                    onPress={() => navigation.navigate("CustomerSignUp")}
+                <TouchableOpacity
+                    style={styles.signInLink}
+                    onPress={() => navigation.navigate("CustomerSignIn")}
                 >
-                    <Text style={styles.signUpText}>
-                        Don't have an account? <Text style={styles.signUpHighlight}>Sign Up</Text>
+                    <Text style={styles.signInText}>
+                        Already have an account? <Text style={styles.signInHighlight}>Sign In</Text>
                     </Text>
                 </TouchableOpacity>
             </View>
@@ -93,7 +114,6 @@ const CustomerSignIn = ({ navigation }) => {
     );
 };
 
-// Reuse the same styles from SignUp with some additions
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -162,17 +182,17 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#000',
     },
-    signUpLink: {
+    signInLink: {
         marginTop: 15,
     },
-    signUpText: {
+    signInText: {
         color: 'gray',
         fontSize: 12,
     },
-    signUpHighlight: {
+    signInHighlight: {
         color: '#F0C14B',
         fontWeight: 'bold',
     },
 });
 
-export default CustomerSignIn;
+export default CustomerSignUp;
