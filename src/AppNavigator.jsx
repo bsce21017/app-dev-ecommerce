@@ -13,6 +13,7 @@ import ProductList from './screens/ProductList';
 import TaskList from "./screens/TaskList";
 import TaskDetail from "./screens/TaskDetail";
 import AddProduct from './screens/AddProduct';
+import EditProduct from './screens/EditProduct';
 
 const App = () => {
     const Stack = createStackNavigator();
@@ -30,6 +31,7 @@ const App = () => {
                 <Stack.Screen name="ProductList" component={ProductList} options={{ headerShown: false }} />
                 <Stack.Screen name="TaskList" component={TaskList} options={{ headerShown: false }} />
                 <Stack.Screen name="TaskDetail" component={TaskDetail} options={{ headerShown: false }} />
+                <Stack.Screen name="EditProduct" component={EditProduct} options={{ headerShown: false }} />
             </Stack.Navigator>
         </NavigationContainer>
     );

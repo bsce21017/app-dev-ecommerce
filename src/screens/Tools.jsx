@@ -52,6 +52,7 @@ const styles = StyleSheet.create({
   },
   section: {
     marginTop: 16,
+    // marginBottom: 16,
     backgroundColor: "#1a1a1a",
     padding: 16,
     borderRadius: 12,
@@ -62,6 +63,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   buttonRow: {
+    marginTop: 12,
     flexDirection: "row",
     justifyContent: "space-between",
   },

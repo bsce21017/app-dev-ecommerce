@@ -1,18 +1,19 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, SafeAreaView, Pressable, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, SafeAreaView, Pressable, Alert, ActivityIndicator } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import IconA from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native';
-import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from "./../../firebaseConfig"
+import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { auth, db } from "./../../firebaseConfig";
 
 const SellerStore = () => {
-    const navigation = useNavigation();
-  
-  const [name, setName] = React.useState('');
-  const [error, setError] = React.useState(null);
+  const navigation = useNavigation();
+  const [name, setName] = useState('');
+  const [error, setError] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const fetchUserData = async () => {
+  const fetchStoreData = async () => {
     try {
       const user = auth.currentUser;
       if (!user) {
@@ -20,36 +21,39 @@ const SellerStore = () => {
         return;
       }
 
+      // Fetch seller profile
       const userDoc = await getDoc(doc(db, 'seller', user.uid));
       if (userDoc.exists()) {
-        console.log(userDoc.data())
         setName(userDoc.data().businessName);
       } else {
-        setError('No seller document found or not approved');
+        setError('No seller document found');
       }
+
+      // Fetch seller products
+      const productsRef = collection(db, 'products', user.uid, 'published_products');
+      const querySnapshot = await getDocs(productsRef);
+      const productsList = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        image: doc.data().images?.[0]
+          ? { uri: doc.data().images[0] }
+          : require("./../../assets/frame.png")
+      }));
+
+      setProducts(productsList);
     } catch (err) {
-      if (err.code === 'permission-denied') {
-        setError('You don\'t have permission to view this data');
-      } else {
-        setError('Failed to fetch user data');
-        console.log(error);
-      }
+      console.error("Fetch error:", err);
+      setError('Failed to load store data');
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUserData().then((data) => {
-      Alert.alert(data.businessName);
-      setName(data.businessName);
-    });
-  }, []);
-
-  const products = [...Array(6)].map((_, i) => ({
-    id: i.toString(),
-    name: `Product ${i + 1}`,
-    sales: Math.floor(Math.random() * 50) + 1,
-    image: require("./../../assets/frame.png")
-  }));
+    const unsubscribe = navigation.addListener('focus', fetchStoreData);
+    fetchStoreData();
+    return unsubscribe;
+  }, [navigation]);
 
   const orderStats = [
     { icon: "credit-card", label: "Earnings" },
@@ -65,13 +69,68 @@ const SellerStore = () => {
     "Top Sellers"
   ];
 
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#F0C14B" />
+          <Text style={styles.loadingText}>Loading your products...</Text>
+        </View>
+      );
+    }
+
+    if (error) {
+      return (
+        <View style={styles.errorContainer}>
+          <Icon name="error-outline" size={48} color="#F0C14B" />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={fetchStoreData}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return (
+      <>
+        <View style={styles.section}>
+          {products.length > 0 ? (
+            <View style={styles.productGrid}>
+              {products.map((product) => (
+                <TouchableOpacity
+                  key={product.id}
+                  style={styles.productCard}
+                  onPress={() => navigation.navigate('EditProduct', {
+                    productId: product.id,
+                    isDraft: false // Editing published products
+                  })}
+                >
+                  <Image source={product.image} style={styles.productImage} />
+                  <Text style={styles.salesText}>{product.sales || 0} SALES</Text>
+                  <Text style={styles.itemName}>{product.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.noProductsContainer}>
+              <Icon name="inventory" size={48} color="gray" />
+              <Text style={styles.noProductsText}>No products yet</Text>
+            </View>
+          )}
+        </View>
+      </>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>{name || "Your Store"}</Text>
-
-          <Pressable>
+          <Pressable onPress={() => navigation.navigate('StoreSettings')}>
             <Icon name="settings" size={24} color="#F0C14B" />
           </Pressable>
         </View>
@@ -98,7 +157,11 @@ const SellerStore = () => {
             contentContainerStyle={styles.orderStatusContainer}
           >
             {orderStats.map((item, index) => (
-              <TouchableOpacity key={index} style={styles.orderItem}>
+              <TouchableOpacity
+                key={index}
+                style={styles.orderItem}
+                onPress={() => navigation.navigate('Orders', { filter: item.label })}
+              >
                 <IconA name={item.icon} size={24} color="#F0C14B" />
                 <Text style={styles.orderText}>{item.label}</Text>
               </TouchableOpacity>
@@ -109,30 +172,26 @@ const SellerStore = () => {
         <View style={styles.section}>
           <View style={styles.optionsContainer}>
             {storeOptions.map((option, index) => (
-              <TouchableOpacity key={index} style={styles.optionItem}>
+              <TouchableOpacity
+                key={index}
+                style={styles.optionItem}
+                onPress={() => navigation.navigate('StoreTips')}
+              >
                 <Text style={styles.optionText}>{option}</Text>
                 <Icon name="chevron-right" size={20} color="#F0C14B" />
               </TouchableOpacity>
             ))}
           </View>
         </View>
-
-        <TouchableOpacity style={styles.addProductButton} onPress={() => navigation.navigate("AddProduct")}>
+        <TouchableOpacity
+          style={styles.addProductButton}
+          onPress={() => navigation.navigate("AddProduct")}
+        >
           <Text style={styles.addProductText}>ADD NEW PRODUCT</Text>
           <Icon name="add-circle" size={24} color="#F0C14B" />
         </TouchableOpacity>
+        {renderContent()}
 
-        <View style={styles.section}>
-          <View style={styles.productGrid}>
-            {products.map((product) => (
-              <TouchableOpacity key={product.id} style={styles.productCard}>
-                <Image source={product.image} style={styles.productImage} />
-                <Text style={styles.salesText}>{product.sales} SALES</Text>
-                <Text style={styles.itemName}>{product.name}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -146,6 +205,39 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+  },
+  loadingContainer: {
+    minHeight: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  loadingText: {
+    color: '#F0C14B',
+    marginTop: 16,
+  },
+  errorContainer: {
+    minHeight: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 20,
+    padding: 20,
+  },
+  errorText: {
+    color: 'white',
+    fontSize: 16,
+    marginVertical: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#F0C14B',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: 'black',
+    fontWeight: 'bold',
   },
   header: {
     flexDirection: 'row',
@@ -262,6 +354,16 @@ const styles = StyleSheet.create({
     color: '#FFF',
     marginTop: -14,
     marginBottom: 5,
+  },
+  noProductsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  noProductsText: {
+    color: 'gray',
+    fontSize: 16,
+    marginTop: 16,
   },
 });
 

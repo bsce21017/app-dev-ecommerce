@@ -2,16 +2,8 @@ import React, { useState, useEffect ,useLayoutEffect} from 'react';
 import { View, Text, TextInput, FlatList, Image, Pressable, StyleSheet, Alert } from 'react-native';
 import Icon from "react-native-vector-icons/FontAwesome";
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
-import { 
-  collection, 
-  doc, 
-  onSnapshot, 
-  orderBy, 
-  serverTimestamp, 
-  addDoc, 
-  updateDoc,
-  query
-} from 'firebase/firestore';
+import { collection, doc, onSnapshot, orderBy, serverTimestamp, addDoc, updateDoc, query } from 'firebase/firestore';
+
 import { db } from './../../firebaseConfig';
 
 const image2 = require('./../../assets/arrow.png');

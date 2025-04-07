@@ -236,10 +236,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#E7C574',
     paddingVertical: 14,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     height: 50, 
-    width: 400,
-    justifyContent: 'center',
+    width: "100%",
+    justifyContent: 'flex-end',
   },
   footerButtonText: {
     color: '#000',

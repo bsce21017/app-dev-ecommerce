@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, Switch, ScrollView, StyleSheet, Image, FlatList, Alert } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Switch, ScrollView, StyleSheet, Image, FlatList, Alert, Platform } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { launchImageLibrary } from 'react-native-image-picker';
 import { collection, doc, getDocs, serverTimestamp, addDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, getStorage } from 'firebase/storage';
+import axios from 'axios';
+import ImageResizer from '@bam.tech/react-native-image-resizer';// import mime from 'react-native-mime-types';
+
 import { auth, db } from "./../../firebaseConfig"
 
-const AddProduct = () => {
+const AddProduct = ({ navigation }) => {
   // const [availability, setAvailability] = useState(true);
   const [images, setImages] = useState([]);
-  const [products, setProducts] = React.useState(0);
-  const [product, setProduct] = React.useState({
+
+  const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [products, setProducts] = useState(0);
+  const [product, setProduct] = useState({
     name: "",
     price: "",
     category: "",
@@ -18,55 +23,91 @@ const AddProduct = () => {
     availability: true,
   });
 
-  const fetchSellerProducts = async () => {
+  const IMGBB_API_KEY = '154d0923e02aa6b645443b5e26257bab';
+
+  const compressImage = async (uri) => {
     try {
-      const user = auth.currentUser;
-      if (!user) {
-        console.log('No user is signed in');
-        return;
-      }
-
-      const productsCollectionRef = collection(db, 'seller', user.uid, 'products');
-      const querySnapshot = await getDocs(productsCollectionRef);
-
-      if (!querySnapshot.empty) {
-        const productsList = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-
-        // console.log('Fetched products:', productsList.length);
-        setProducts(productsList.length);
-      } else {
-        console.log('No products found for this seller');
-      }
-    } catch (err) {
-      console.error('Full error:', err); 
-      if (err.code === 'permission-denied') {
-        setError('You don\'t have permission to view this data');
-      } else {
-        setError('Failed to fetch products');
-      }
+      const result = await ImageResizer.resize({
+        uri,
+        width: 1200,
+        height: 1200,
+        compressFormat: 'JPEG',
+        quality: 70,
+        mode: 'contain'
+      });
+      return result.uri;
+    } catch (error) {
+      console.warn('Compression failed, using original:', error);
+      return uri;
     }
   };
 
-  useEffect(() => {
-    fetchSellerProducts();
-  }, []);
+  const uploadToImgBB = async (uri) => {
+    try {
+      const compressedUri = await compressImage(uri);
+
+      const formData = new FormData();
+      formData.append('image', {
+        uri: compressedUri,
+        type: 'image/jpeg',
+        name: `product_${Date.now()}.jpg`,
+      });
+
+      const response = await axios.post(
+        `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          onUploadProgress: (progressEvent) => {
+            const progress = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            setUploadProgress(progress);
+          },
+        }
+      );
+
+      return response.data.data.url;
+    } catch (error) {
+      console.error('ImgBB upload error:', error);
+      throw error;
+    }
+  };
+
 
   const importImage = async () => {
     try {
       const result = await launchImageLibrary({
         mediaType: 'photo',
+        quality: 0.8,
         selectionLimit: 8 - images.length,
-        // includeBase64: true // Optional: if you need base64 data
       });
 
-      if (!result.didCancel && result.assets) {
-        setImages(prevImages => [...prevImages, ...result.assets]);
+      if (result.assets?.length) {
+        setLoading(true);
+        setUploadProgress(0);
+
+        const uploadedUrls = await Promise.all(
+          result.assets.map(async (asset) => {
+            try {
+              return await uploadToImgBB(asset.uri);
+            } catch (error) {
+              console.error('Failed to upload one image:', error);
+              return null;
+            }
+          })
+        );
+
+        setImages([...images, ...uploadedUrls.filter(url => url !== null)]);
+        Alert.alert('Success', 'Images uploaded successfully!');
       }
     } catch (error) {
-      console.error('Image picker error:', error);
+      Alert.alert('Error', 'Failed to select images');
+    } finally {
+      setLoading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -78,70 +119,59 @@ const AddProduct = () => {
     images.length < 8 ? importImage() : console.log("Maximum Images Selected")
   }
 
+
+
   const handleDraftPress = async () => {
     if (!product.name || !product.price || !product.category || images.length === 0) {
-      Alert.alert("Error", "Please fill all the required fields and add at least one image");
+      Alert.alert("Error", "Please fill all required fields");
       return;
     }
 
     try {
       setLoading(true);
       const user = auth.currentUser;
-      
+
       if (!user) {
         Alert.alert("Error", "No user logged in");
         return;
       }
 
-      // 1. Upload images to Firebase Storage
-      const imageUrls = await Promise.all(
-        images.map(async (image) => {
-          const storageRef = ref(storage, `products/${user.uid}/${Date.now()}_${image.fileName}`);
-          await uploadBytes(storageRef, image);
-          return await getDownloadURL(storageRef);
-        })
-      );
-
-      // 2. Add product document to Firestore
       const productData = {
         ...product,
-        price: Number(product.price), // Convert string to number
-        images: imageUrls,
+        price: Number(product.price),
+        images: images,
         createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        status: "draft",
-        sellerId: user.uid
+        // sellerId: user.uid,
+        // status: "draft"
       };
 
-      const docRef = await addDoc(
-        collection(db, 'seller', user.uid, 'products'), 
-        productData
-      );
+      await addDoc(collection(db, 'seller', user.uid, 'products'), productData);
 
-      Alert.alert("Success", "Product saved as draft");
-      console.log("Product added with ID: ", docRef.id);
-      
-      // Reset form after successful submission
+      Alert.alert("Success", "Product saved successfully");
+      // Reset form
       setProduct({
         name: "",
         price: "",
         category: "",
         sales: 0,
-        availability: false,
+        availability: true,
       });
       setImages([]);
 
+      navigation.goBack()
     } catch (error) {
-      console.error("Error adding product: ", error);
-      Alert.alert("Error", "Failed to save product");
+      console.error("Error:", error);
+      Alert.alert("Error", error.message || "Failed to save product");
     } finally {
       setLoading(false);
     }
   };
-  
-  const handlePublishPress = () => {
 
-    // console.log("Product Published")
+  const handlePublishPress = async () => {
+    if (!product.name || !product.price || !product.category || images.length === 0) {
+      Alert.alert("Error", "Please fill all the required fields and add at least one image");
+      return;
+    }
   }
 
   return (
@@ -185,6 +215,22 @@ const AddProduct = () => {
         )}
       </View>
 
+      {uploadProgress > 0 && uploadProgress < 100 && (
+        <View style={{ marginTop: 10 }}>
+          <Text style={{ color: 'gray', fontSize: 12 }}>
+            Uploading: {uploadProgress}%
+          </Text>
+          <View style={styles.progressContainer}>
+            <View
+              style={[
+                styles.progressBar,
+                { width: `${uploadProgress}%` }
+              ]}
+            />
+          </View>
+        </View>
+      )}
+
       <View style={styles.section}>
         <Text style={styles.label}>Product Name (English) *</Text>
         <TextInput
@@ -224,7 +270,7 @@ const AddProduct = () => {
         <TouchableOpacity style={styles.draftButton} onPress={handleDraftPress}>
           <Text style={styles.draftButtonText}>Save as Draft</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.publishButton}>
+        <TouchableOpacity style={styles.publishButton} onPress={handlePublishPress}>
           <Text style={styles.publishButtonText}>Publish Product</Text>
         </TouchableOpacity>
       </View>
@@ -341,6 +387,17 @@ const styles = StyleSheet.create({
     color: "black",
     textAlign: 'center',
     fontWeight: 'bold',
+  },
+  progressContainer: {
+    height: 5,
+    backgroundColor: '#333',
+    marginTop: 10,
+    borderRadius: 5,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#F0C14B',
   },
 });
 

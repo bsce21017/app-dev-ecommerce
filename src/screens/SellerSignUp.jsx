@@ -29,8 +29,9 @@ const SellerSignUp = ({ navigation }) => {
 
             // await setCustomClaim(userCred.user.uid);
             // const db = getFirestore();
+            randomBusinessName = `Artist_${Math.floor(Math.random() * 10000)}`;
             await setDoc(doc(db, 'seller', userCred.user.uid), {
-                businessName: form.businessName,
+                businessName: randomBusinessName,
                 approved: false,
                 email: form.email,
                 createdAt: new Date()
