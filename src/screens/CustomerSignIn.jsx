@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
-import { auth } from '../../firebaseConfig';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth, db } from '../../firebaseConfig';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 const CustomerSignIn = ({ navigation }) => {
     const [form, setForm] = useState({
@@ -19,10 +20,29 @@ const CustomerSignIn = ({ navigation }) => {
         setIsLoading(true);
 
         try {
-            await signInWithEmailAndPassword(auth, form.email, form.password);
+             // Sign in the user
+             const userCredential = await signInWithEmailAndPassword(auth, form.email, form.password);
+             const userId = userCredential.user.uid;
+ 
+             // Check if this UID exists in the sellers collection
+             const sellerDocRef = doc(db, 'seller', userId);
+             const sellerDoc = await getDoc(sellerDocRef);
+ 
+             if (sellerDoc.exists()) {
+                 // If user is a seller, sign them out immediately
+                 await signOut(auth);
+                 Alert.alert(
+                     'Access Denied', 
+                     'Sellers must use the seller app to sign in. Please use the seller dashboard.'
+                 );
+                 return;
+             }
+
+
             navigation.navigate('UserHome');
         } catch (error) {
             let errorMessage = 'Sign in failed. Please try again.';
+            console.log(error.code); // Debug log
             
             if (error.code === 'auth/invalid-credential') {
                 errorMessage = 'Invalid email or password';

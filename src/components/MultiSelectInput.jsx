@@ -12,7 +12,7 @@ const MultiSelectInput = ({
 
   const selectOption = (value) => {
     onValueChange(value);
-    setShowOptions(false); // Close dropdown after selection
+    setShowOptions(false);
   };
 
   return (
@@ -21,9 +21,9 @@ const MultiSelectInput = ({
         style={styles.input}
         onPress={() => setShowOptions(!showOptions)}
       >
-        <Text style={!selectedValue ? styles.placeholder : styles.selectedText}>
-          {selectedValue 
-            ? options.find(opt => opt.value === selectedValue)?.label 
+        <Text style={!selectedValue || !options.find(opt => opt.value === selectedValue) ? styles.placeholder : styles.selectedText}>
+          {selectedValue && options.find(opt => opt.value === selectedValue)
+            ? options.find(opt => opt.value === selectedValue).label
             : placeholder}
         </Text>
       </TouchableOpacity>
@@ -54,10 +54,10 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   input: {
-    borderWidth: 1,
+    // borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 4,
-    padding: 12,
+    // padding: 12,
   },
   placeholder: {
     color: '#999',
@@ -78,7 +78,8 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   option: {
-    padding: 12,
+    // paddingTop: 5,
+    paddingLeft: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },

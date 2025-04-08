@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { db, auth } from '../../firebaseConfig';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 const SellerSignUp = ({ navigation }) => {
+    const [isLoading, setIsLoading] = useState(false);
     const [form, setForm] = useState({
         email: '',
         password: '',
@@ -13,41 +14,63 @@ const SellerSignUp = ({ navigation }) => {
 
 
     const handleSubmit = async () => {
+
         if (!form.email || !form.password) {
             Alert.alert('Error', 'Please fill in all fields.');
             return;
         }
 
+        setIsLoading(true);
+
         try {
             const userCred = await createUserWithEmailAndPassword(auth, form.email, form.password);
 
-            randomBusinessName = `Artist_${Math.floor(Math.random() * 10000)}`;
+            const randomBusinessName = `Artist_${Math.floor(Math.random() * 10000)}`;
+
             await setDoc(doc(db, 'seller', userCred.user.uid), {
                 businessName: randomBusinessName,
                 approved: false,
                 email: form.email,
                 createdAt: new Date()
             });
+            console.log('Document set in Firestore'); // Debug log
 
             Alert.alert('Success', 'Seller registered!');
-            navigation.navigate('SellerHome')
+            navigation.navigate('SellerHome');
         } catch (error) {
-
             if (error.code === 'auth/email-already-in-use') {
-                signInWithEmailAndPassword(auth, form.email, form.password)
-                    .then((userCredential) => {
-                        const user = userCredential.user;
-                        Alert.alert("User Signed In Successfully")
-                        navigation.navigate("SellerHome")
-                    })
-                    .catch((error) => {
-                        const errorMessage = error.message;
-                        error.code === 'auth/invalid-credential' ? Alert.alert('Error', 'Invalid Password. Please try again.') : Alert.alert('Error', errorMessage);
-                    });
+                try {
+                    const userCredential = await signInWithEmailAndPassword(auth, form.email, form.password);
+
+                    const userId = userCredential.user.uid;
+                    const customerDocRef = doc(db, 'customers', userId);
+                    const customerDoc = await getDoc(customerDocRef);
+
+                    if (customerDoc.exists()) {
+                        // console.log('User is a customer, denying access');
+                        await signOut(auth);
+                        Alert.alert(
+                            'Access Denied',
+                            'Customers must use the customer app to sign in. Please use the customer dashboard.'
+                        );
+                        return;
+                    }
+
+                    Alert.alert("Seller Signed In Successfully");
+                    navigation.navigate("SellerHome");
+                } catch (signInError) {
+                    console.error('Sign in error:', signInError); // Debug log
+                    if (signInError.code === 'auth/invalid-credential') {
+                        Alert.alert('Error', 'Invalid Password. Please try again.');
+                    } else {
+                        Alert.alert('Error', signInError.message);
+                    }
+                }
                 return;
             }
-            console.error('Signup failed:', error);
-            Alert.alert(error.name, error.code);
+            Alert.alert('Error', error.message);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -62,8 +85,14 @@ const SellerSignUp = ({ navigation }) => {
                 <TextInput placeholder="Password" style={styles.input} placeholderTextColor="#888" secureTextEntry value={form.password} onChangeText={(value) => setForm({ ...form, password: value })} />
                 {/* <TextInput placeholder="Category" style={styles.input} placeholderTextColor="#888" /> */}
 
-                <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                    <Text style={styles.submitButtonText}>SIGNUP OR LOGIN</Text>
+                <TouchableOpacity
+                    style={[styles.button, isLoading && styles.disabledButton]}
+                    onPress={handleSubmit}
+                    disabled={isLoading}
+                >
+                    <Text style={styles.buttonText}>
+                        {isLoading ? 'PLEASE WAIT...' : 'SIGN IN'}
+                    </Text>
                 </TouchableOpacity>
             </View>
         </View>

@@ -25,6 +25,19 @@ const EditProduct = ({ route, navigation }) => {
         { value: 'inactive', label: 'Inactive' },
     ];
 
+    const getCategoryOptions = () => {
+        const baseOptions = [
+            { value: 'tools', label: 'Tools' },
+            { value: 'calligraphy', label: 'Calligraphy' },
+            { value: 'painting', label: 'Painting' },
+        ];
+        
+        if (isDraft) {
+            baseOptions.push({ value: 'testing', label: 'Testing' });
+        }        
+        return baseOptions;
+    };
+
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [publishing, setPublishing] = useState(false);
@@ -78,7 +91,7 @@ const EditProduct = ({ route, navigation }) => {
             const result = await launchImageLibrary({
                 mediaType: 'photo',
                 quality: 0.8,
-                selectionLimit: 5 - product.images.length - newImages.length
+                selectionLimit: 8 - product.images.length - newImages.length
             });
 
             if (result.assets) {
@@ -89,14 +102,17 @@ const EditProduct = ({ route, navigation }) => {
         }
     };
 
-    const removeImage = (index, isNew) => {
-        if (isNew) {
-            setNewImages(newImages.filter((_, i) => i !== index));
-        } else {
+    const removeImage = (index) => {
+        // If the index is less than the length of product.images, it's an existing image
+        if (index < product.images.length) {
             setProduct({
                 ...product,
                 images: product.images.filter((_, i) => i !== index)
             });
+        } else {
+            // Otherwise, it's a new image from newImages
+            const newImageIndex = index - product.images.length;
+            setNewImages(newImages.filter((_, i) => i !== newImageIndex));
         }
     };
 
@@ -130,6 +146,13 @@ const EditProduct = ({ route, navigation }) => {
     };
 
     const handlePublish = async () => {
+        if (product.category === 'testing') {
+            Alert.alert(
+                'Publishing Restricted',
+                'Products with "testing" category cannot be published.'
+            );
+            return;
+        }
         try {
             setPublishing(true);
             const user = auth.currentUser;
@@ -209,13 +232,14 @@ const EditProduct = ({ route, navigation }) => {
                 onChangeText={(text) => setProduct({ ...product, stock: text })}
             />
 
-            <TextInput
-                style={styles.input}
+            <MultiSelectInput
+                options={getCategoryOptions()}
+                selectedValue={product.category}
+                onValueChange={(value) => setProduct({ ...product, category: value })}
                 placeholder="Category"
-                value={product.category}
-                onChangeText={(text) => setProduct({ ...product, category: text })}
+                style={styles.input}
             />
-            
+
             <MultiSelectInput
                 options={statusOptions}
                 selectedValue={product.status}
@@ -246,13 +270,13 @@ const EditProduct = ({ route, navigation }) => {
                         <Image source={{ uri }} style={styles.image} />
                         <TouchableOpacity
                             style={styles.removeImageButton}
-                            onPress={() => removeImage(index, index >= product.images.length)}
+                            onPress={() => removeImage(index)}
                         >
                             <Icon name="close" size={16} color="white" />
                         </TouchableOpacity>
                     </View>
                 ))}
-                {[...product.images, ...newImages].length < 5 && (
+                {[...product.images, ...newImages].length < 8 && (
                     <TouchableOpacity style={styles.addImageButton} onPress={handleImageSelect}>
                         <Icon name="add" size={24} color="#F0C14B" />
                     </TouchableOpacity>
@@ -384,10 +408,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     buttonContainer: {
-        marginTop: 20,
+        marginTop: 10,
     },
     button: {
-        padding: 15,
+        padding: 5,
         borderRadius: 8,
         alignItems: 'center',
         marginBottom: 15,

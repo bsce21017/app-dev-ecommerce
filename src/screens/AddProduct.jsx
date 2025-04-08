@@ -6,11 +6,19 @@ import { collection, doc, getDocs, serverTimestamp, addDoc } from 'firebase/fire
 import axios from 'axios';
 import ImageResizer from '@bam.tech/react-native-image-resizer';// import mime from 'react-native-mime-types';
 
+import MultiSelectInput from './../components/MultiSelectInput';
 import { auth, db } from "./../../firebaseConfig"
 
 const AddProduct = ({ navigation }) => {
   // const [availability, setAvailability] = useState(true);
   const [images, setImages] = useState([]);
+
+  const categoryOptions = [
+    { value: 'tools', label: 'Tools' },
+    { value: 'calligraphy', label: 'Calligraphy' },
+    { value: 'painting', label: 'Painting' },
+    { value: 'testing', label: 'Testing' }
+  ];
 
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -172,6 +180,13 @@ const AddProduct = ({ navigation }) => {
       Alert.alert("Error", "Please fill all the required fields and add at least one image");
       return;
     }
+    if (product.category === 'testing') {
+      Alert.alert(
+        'Publishing Restricted',
+        'Products with "testing" category cannot be published.'
+      );
+      return;
+    }
   }
 
   return (
@@ -250,11 +265,13 @@ const AddProduct = ({ navigation }) => {
         />
 
         <Text style={styles.label}>Category *</Text>
-        <TextInput
-          style={styles.input}
+        <MultiSelectInput
+          options={categoryOptions}
+          selectedValue={product.category}
+          onValueChange={(value) => setProduct({ ...product, category: value })}
           placeholder="Category"
           placeholderTextColor="gray"
-          onChangeText={(value) => setProduct({ ...product, category: value })}
+          style={styles.input}
         />
       </View>
 

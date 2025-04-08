@@ -10,7 +10,7 @@ const WelcomeScreen = ({ navigation }) => {
         <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('CustomerSignUp')}>
           <Text style={styles.buttonText}>CONTINUE AS A CUSTOMER</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('SellerSignIn')}>
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('SellerSignUp')}>
           <Text style={styles.buttonText}>CONTINUE AS A SELLER</Text>
         </TouchableOpacity>
       </View>

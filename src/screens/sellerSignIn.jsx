@@ -5,8 +5,8 @@ import { auth } from '../../firebaseConfig';
 
 const SellerSignIn = ({ route, navigation }) => {
     const [form, setForm] = useState({
-        email: route.params.email || '',
-        password: '',
+        // email: route.params.email || '',
+        // password: '',
     })
 
     const handleSubmit = async () => {
