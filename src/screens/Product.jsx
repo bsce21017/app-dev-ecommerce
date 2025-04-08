@@ -12,12 +12,70 @@ const { width } = Dimensions.get('window');
 const Product = ({ route, navigation }) => {
   const { productId, sellerId } = route.params;
 
+  const [isInWishlist, setIsInWishlist] = useState(false);
   const [product, setProduct] = useState(null);
   const [seller, setSeller] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+
+  useEffect(() => {
+    const checkWishlistStatus = async () => {
+      try {
+        const user = auth.currentUser;
+        if (!user) return;
+
+        const customerRef = doc(db, 'customers', user.uid);
+        const wishlistRef = doc(collection(customerRef, 'wishlist'), productId);
+        const wishlistItemSnap = await getDoc(wishlistRef);
+
+        setIsInWishlist(wishlistItemSnap.exists());
+      } catch (error) {
+        console.error('Error checking wishlist:', error);
+      }
+    };
+
+    if (productId) {
+      checkWishlistStatus();
+    }
+  }, [productId]);
+
+  // Add this wishlist handler function
+  const handleWishlist = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        Alert.alert('Error', 'You need to be logged in to manage wishlist');
+        return;
+      }
+
+      const customerRef = doc(db, 'customers', user.uid);
+      const wishlistRef = doc(collection(customerRef, 'wishlist'), productId);
+
+      if (isInWishlist) {
+        // Remove from wishlist
+        await setDoc(wishlistRef, {}, { merge: true });
+        setIsInWishlist(false);
+        Alert.alert('Removed', `${product.name} removed from wishlist`, [{ text: 'OK' }]);
+      } else {
+        // Add to wishlist
+        await setDoc(wishlistRef, {
+          productId: product.id,
+          sellerId: sellerId,
+        });
+        setIsInWishlist(true);
+        Alert.alert(
+          'Added to Wishlist',
+          `${product.name} added to your wishlist!`,
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Error managing wishlist:', error);
+      Alert.alert('Error', 'Failed to update wishlist');
+    }
+  };
 
   const getValidImageSource = (uri) => {
     if (!uri || typeof uri !== 'string') {
@@ -98,7 +156,7 @@ const Product = ({ route, navigation }) => {
 
   const incrementQuantity = () => setQuantity(prev => prev + 1);
   const decrementQuantity = () => setQuantity(prev => (prev > 1 ? prev - 1 : 1));
-  
+
   const handleAddToCart = async () => {
     try {
       const user = auth.currentUser;
@@ -106,13 +164,13 @@ const Product = ({ route, navigation }) => {
         Alert.alert('Error', 'You need to be logged in to add items to cart');
         return;
       }
-  
+
       const customerRef = doc(db, 'customers', user.uid);
       const cartRef = doc(collection(customerRef, 'cart'), productId);
-  
+
       // Check if the product already exists in cart
       const cartItemSnap = await getDoc(cartRef);
-  
+
       if (cartItemSnap.exists()) {
         // Product exists - update quantity
         await updateDoc(cartRef, {
@@ -136,7 +194,7 @@ const Product = ({ route, navigation }) => {
           [{ text: 'OK' }]
         );
       }
-  
+
     } catch (error) {
       console.error('Error adding to cart:', error);
       Alert.alert('Error', 'Failed to add item to cart');
@@ -238,8 +296,12 @@ const Product = ({ route, navigation }) => {
               </View>
             </View>
           </View>
-          <Pressable style={styles.iconButton}>
-            <Icon name="heart" size={18} color="#E7C574" />
+          <Pressable style={styles.iconButton} onPress={handleWishlist}>
+            <Icon
+              name={isInWishlist ? "heart" : "heart-o"}
+              size={18}
+              color="#E7C574"
+            />
           </Pressable>
         </View>
 

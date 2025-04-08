@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, SectionList, Image, Pressable, StyleSheet, SafeAreaView } from 'react-native';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from './../../firebaseConfig';
+import { auth, db } from './../../firebaseConfig';
 import Icon from "react-native-vector-icons/FontAwesome";
 
 const ChatScreen = ({ navigation }) => {

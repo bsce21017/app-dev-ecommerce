@@ -135,7 +135,7 @@ const ProfileScreen = ({ navigation }) => {
           </View>
         </View>
 
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <FlatList
             data={wishlistItems}
             renderItem={renderWishlistItem}
@@ -144,7 +144,7 @@ const ProfileScreen = ({ navigation }) => {
             scrollEnabled={false}
             contentContainerStyle={styles.wishlistContainer}
           />
-        </View>
+        </View> */}
       </ScrollView>
     </SafeAreaView>
   );

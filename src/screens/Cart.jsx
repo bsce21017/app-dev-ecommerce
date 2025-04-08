@@ -50,7 +50,9 @@ const Cart = ({ navigation }) => {
   };
 
   useEffect(() => {
-    fetchCartItems();
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchCartItems();
+    });
   }, []);
 
   const renderCartItem = ({ item }) => (
