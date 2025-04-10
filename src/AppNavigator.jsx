@@ -13,16 +13,19 @@ import TaskList from "./screens/TaskList";
 import TaskDetail from "./screens/TaskDetail";
 import AddProduct from './screens/AddProduct';
 import EditProduct from './screens/EditProduct';
+import CheckoutScreen from './screens/CheckoutScreen';
+import OrderConfirmation from './screens/OrderConfirmation';
+import OrdersScreen from "./screens/OrdersScreen"
 
 const App = () => {
     const Stack = createStackNavigator();
     return (
         <NavigationContainer>
             <Stack.Navigator>
-                <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }}/>
-                <Stack.Screen name="CustomerSignIn" component={CustomerSignIn} options={{ headerShown: false }}/>
-                <Stack.Screen name="CustomerSignUp" component={CustomerSignUp} options={{ headerShown: false }}/>
-                <Stack.Screen name="SellerSignUp" component={SellerSignUp} options={{ headerShown: false }}/>
+                <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="CustomerSignIn" component={CustomerSignIn} options={{ headerShown: false }} />
+                <Stack.Screen name="CustomerSignUp" component={CustomerSignUp} options={{ headerShown: false }} />
+                <Stack.Screen name="SellerSignUp" component={SellerSignUp} options={{ headerShown: false }} />
                 <Stack.Screen name="UserHome" component={BottomTabs} options={{ headerShown: false }} />
                 <Stack.Screen name="SellerHome" component={BottomNavbar} options={{ headerShown: false }} />
                 <Stack.Screen name="Product" component={Product} options={{ headerShown: false }} />
@@ -31,6 +34,9 @@ const App = () => {
                 <Stack.Screen name="TaskList" component={TaskList} options={{ headerShown: false }} />
                 <Stack.Screen name="TaskDetail" component={TaskDetail} options={{ headerShown: false }} />
                 <Stack.Screen name="EditProduct" component={EditProduct} options={{ headerShown: false }} />
+                <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ headerShown: false }}/>
+                <Stack.Screen name="OrderConfirmation" component={OrderConfirmation} options={{ headerShown: false }}/>
+                <Stack.Screen name="Orders" component={OrdersScreen} options={{ headerShown: false }}/>
             </Stack.Navigator>
         </NavigationContainer>
     );

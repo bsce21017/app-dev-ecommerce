@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, SectionList, Image, Pressable, StyleSheet, SafeAreaView } from 'react-native';
 import IconM from "react-native-vector-icons/MaterialIcons";
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getDoc, doc, and, or } from 'firebase/firestore';
 import { auth, db } from './../../firebaseConfig';
 
 const MyChatsScreen = ({ navigation }) => {
@@ -10,56 +10,86 @@ const MyChatsScreen = ({ navigation }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) {
-      setError('No user logged in');
-      setLoading(false);
-      return;
-    }
+    const fetchData = async () => {
+      try {
+        const user = auth.currentUser;
+        if (!user) {
+          setError('No user is signed in');
+          setLoading(false);
+          return;
+        }
 
-    const currentStoreName = 'Metro'; // Replace with dynamic store name if needed
+        const userDoc = await getDoc(doc(db, 'seller', user.uid));
+        if (userDoc.exists()) {
+          const businessName = userDoc.data().businessName;
 
-    const chatsQuery = query(
-      collection(db, 'chats'),
-      where('storeName', '==', currentStoreName)
-    );
+          const chatsRef = collection(db, 'chats')
 
-    const unsubscribe = onSnapshot(
-      chatsQuery,
-      (snapshot) => {
-        try {
-          const chats = [];
-          snapshot.forEach((doc) => {
-            const data = doc.data();
-            chats.push({
-              id: doc.id,
-              userName: data.userName || 'Unnamed User',
-              message: data.lastMessage || '',
-              image: require('./../../assets/frame.png'),
-              time: data.lastMessageTime?.toDate() || new Date(),
-              unread: data.unread || false,
-            });
-          });
+          const chatsQuery = query(
+            chatsRef,
+            or(
+              where('storeName', '==', businessName),
+              where('storeId', '==', user.uid)
+            )
+          );
 
-          const groupedChats = groupChatsByDate(chats);
-          setChatData(groupedChats);
-          setError(null);
-        } catch (err) {
-          console.error('Error processing chats:', err);
-          setError('Failed to load chats');
-        } finally {
+          const unsubscribeChats = onSnapshot(
+            chatsQuery,
+            (snapshot) => {
+              try {
+                const chats = [];
+                snapshot.forEach((doc) => {
+                  const data = doc.data();
+                  chats.push({
+                    id: doc.id,
+                    userName: data.userName || 'Unnamed User',
+                    message: data.lastMessage || '',
+                    image: require('./../../assets/frame.png'),
+                    time: data.lastMessageTime?.toDate() || new Date(),
+                    unread: data.unread || false,
+                  });
+                });
+
+                const groupedChats = groupChatsByDate(chats);
+                setChatData(groupedChats);
+                setError(null);
+              } catch (err) {
+                console.error('Error processing chats:', err);
+                setError('Failed to load chats');
+              } finally {
+                setLoading(false);
+              }
+            },
+            (error) => {
+              console.error('Chats snapshot error:', error);
+              setError('Error loading chat data');
+              setLoading(false);
+            }
+          );
+
+          return unsubscribeChats;
+        } else {
+          setError('No seller document found');
           setLoading(false);
         }
-      },
-      (error) => {
-        console.error('Chats snapshot error:', error);
-        setError('Error loading chat data');
+      } catch (err) {
+        console.error("Fetch error:", err);
+        setError('Failed to load store data');
         setLoading(false);
       }
-    );
+    };
 
-    return () => unsubscribe();
-  }, []);
+    const unsubscribeNav = navigation.addListener('focus', fetchData);
+    const unsubscribePromise = fetchData();
+
+    return () => {
+      unsubscribeNav();
+      unsubscribePromise.then(unsubscribe => {
+        if (unsubscribe) unsubscribe();
+      });
+    };
+  }, [navigation]);
+
 
   const groupChatsByDate = (chats) => {
     const today = new Date();

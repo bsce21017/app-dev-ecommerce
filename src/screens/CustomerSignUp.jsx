@@ -40,7 +40,6 @@ const CustomerSignUp = ({ navigation }) => {
             navigation.navigate('UserHome');
         } catch (error) {
             if (error.code === 'auth/email-already-in-use') {
-                // If email exists, try to sign in
                 console.error('Email already in use:', error);
             } else {
                 Alert.alert('Error', error.message);

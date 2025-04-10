@@ -21,15 +21,13 @@ const SellerStore = () => {
         return;
       }
 
-      // Fetch seller profile
       const userDoc = await getDoc(doc(db, 'seller', user.uid));
       if (userDoc.exists()) {
         setName(userDoc.data().businessName);
       } else {
         setError('No seller document found');
       }
-
-      // Fetch seller products
+ 
       const productsRef = collection(db, 'products', user.uid, 'published_products');
       const querySnapshot = await getDocs(productsRef);
       const productsList = querySnapshot.docs.map(doc => ({
@@ -105,7 +103,7 @@ const SellerStore = () => {
                   style={styles.productCard}
                   onPress={() => navigation.navigate('EditProduct', {
                     productId: product.id,
-                    isDraft: false // Editing published products
+                    isDraft: false
                   })}
                 >
                   <Image source={product.image} style={styles.productImage} />

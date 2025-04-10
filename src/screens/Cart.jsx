@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, Image, Pressable, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, collection, getDocs, getDoc } from 'firebase/firestore';
-import { app } from '../../firebaseConfig'; // your firebase config file
+import { app } from '../../firebaseConfig';
 
 const Cart = ({ navigation }) => {
   const [cartItems, setCartItems] = useState([]);
@@ -35,6 +35,7 @@ const Cart = ({ navigation }) => {
         if (productSnap.exists()) {
           cartData.push({
             id: productId,
+            sellerId: sellerId,
             quantity,
             ...productSnap.data()
           });
@@ -42,6 +43,7 @@ const Cart = ({ navigation }) => {
       }
 
       setCartItems(cartData);
+      console.log('Fetched cart items:', cartData);
     } catch (error) {
       console.error('Error fetching cart items:', error);
     } finally {
@@ -128,8 +130,20 @@ const Cart = ({ navigation }) => {
               <Text style={styles.shipping}>Shipping: PKR {shipping}</Text>
             </View>
 
-            <Pressable style={styles.checkoutButton}>
-              <Text style={styles.checkoutText}>CHECKOUT</Text>
+            <Pressable
+              style={styles.checkoutButton}
+              onPress={() => navigation.navigate('Checkout', {
+                cartItems,
+                subtotal,
+                shipping,
+                total
+              })}
+              disabled={cartItems.length === 0}
+            >
+              {console.log(cartItems)}
+              <Text style={styles.checkoutText}>
+                {cartItems.length === 0 ? 'CART IS EMPTY' : 'CHECKOUT'}
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -162,7 +176,7 @@ const styles = StyleSheet.create({
   priceDetails: { alignItems: 'flex-end' },
   subtotal: { fontWeight: 'bold' },
   shipping: { fontSize: 12 },
-  checkoutButton: { backgroundColor: '#000', borderRadius: 4, paddingHorizontal: 6, marginLeft: 40 },
+  checkoutButton: { backgroundColor: '#000', borderRadius: 4, paddingHorizontal: 6, marginLeft: 30 },
   checkoutText: { color: '#E7C574', fontWeight: 'bold' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }
 });

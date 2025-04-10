@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, SectionList, Image, Pressable, StyleSheet, SafeAreaView } from 'react-native';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getDoc, doc, and, or } from 'firebase/firestore';
 import { auth, db } from './../../firebaseConfig';
 import Icon from "react-native-vector-icons/FontAwesome";
 
@@ -8,39 +8,75 @@ const ChatScreen = ({ navigation }) => {
   const [chatData, setChatData] = useState([]);
 
   useEffect(() => {
-    const currentUserName = 'abubakar'; 
-  
-    const chatsRef = collection(db, 'chats');
-    const chatsQuery = query(
-      chatsRef,
-      where('userName', '==', currentUserName)
-    );
-  
-    const unsubscribe = onSnapshot(chatsQuery, (snapshot) => {
-      const chats = [];
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        chats.push({
-          id: doc.id,
-          storeName: data.storeName || 'Unnamed Store',
-          message: data.lastMessage || '',
-          image: require('./../../assets/sun.png'),
-          time: data.lastMessageTime?.toDate() || new Date(),
-          unread: data.unread || false,
-        });
+    const fetchData = async () => {
+      try {
+        const user = auth.currentUser;
+        if (!user) {
+          setError('No user is signed in');
+          setLoading(false);
+          return;
+        }
+
+        const userDoc = await getDoc(doc(db, 'customers', user.uid));
+        if (userDoc.exists()) {
+          const userName = userDoc.data().name;
+
+          const chatsRef = collection(db, 'chats');
+          const chatsQuery = query(
+            chatsRef,
+            // or(
+              // where('userName', '==', userName),
+              where('userId', '==', user.uid)
+            // )
+          );
+
+          const unsubscribeChats = onSnapshot(
+            chatsQuery,
+            (snapshot) => {
+              const chats = [];
+              snapshot.forEach(doc => {
+                const data = doc.data();
+                chats.push({
+                  id: doc.id,
+                  storeName: data.storeName || 'Unnamed Store',
+                  message: data.lastMessage || '',
+                  image: require('./../../assets/sun.png'),
+                  time: data.lastMessageTime?.toDate() || new Date(),
+                  unread: data.unread || false,
+                });
+              });
+
+              const groupedChats = groupChatsByDate(chats);
+              setChatData(groupedChats);
+            },
+            (error) => {
+              console.error("Error fetching chats:", error);
+              setError('Failed to load chats');
+            }
+          );
+
+          return unsubscribeChats;
+        } else {
+          setError('No customer document found');
+        }
+      } catch (err) {
+        console.error("Fetch error:", err);
+        setError('Failed to load user data');
+      }
+    };
+
+    const unsubscribeNav = navigation.addListener('focus', fetchData);
+    const unsubscribePromise = fetchData();
+
+    return () => {
+      unsubscribeNav();
+      unsubscribePromise.then(unsubscribe => {
+        if (unsubscribe) unsubscribe();
       });
-  
-      const groupedChats = groupChatsByDate(chats);
-      setChatData(groupedChats);
-    }, 
-    (error) => {
-      console.error("Error fetching chats:", error);
-      // Handle error appropriately
-    });
-  
-    return () => unsubscribe();
-  }, []);
-  
+    };
+  }, [navigation]);
+
+
   const groupChatsByDate = (chats) => {
     const groups = {};
     const today = new Date();
@@ -73,7 +109,7 @@ const ChatScreen = ({ navigation }) => {
   );
 
   const renderChatItem = ({ item }) => (
-    <Pressable 
+    <Pressable
       style={styles.chatItem}
       onPress={() => navigation.navigate('TaskDetail', { chatId: item.id, storeName: item.storeName })}
     >
@@ -237,7 +273,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'flex-end',
-    height: 50, 
+    height: 50,
     width: "100%",
     justifyContent: 'flex-end',
   },

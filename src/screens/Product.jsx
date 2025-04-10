@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, Image, Pressable, StyleSheet, ScrollView, Dimensions, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, FlatList, Image, Pressable, StyleSheet, ScrollView, Dimensions, TouchableOpacity, ActivityIndicator, Alert, TextInput } from 'react-native';
 import Icon from "react-native-vector-icons/FontAwesome";
 import { collection, doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from './../../firebaseConfig';
@@ -11,7 +11,7 @@ const { width } = Dimensions.get('window');
 
 const Product = ({ route, navigation }) => {
   const { productId, sellerId } = route.params;
-
+  const [name, setName] = useState('');
   const [isInWishlist, setIsInWishlist] = useState(false);
   const [product, setProduct] = useState(null);
   const [seller, setSeller] = useState(null);
@@ -21,12 +21,15 @@ const Product = ({ route, navigation }) => {
   const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
+    // console.log("Testing")
     const checkWishlistStatus = async () => {
       try {
         const user = auth.currentUser;
         if (!user) return;
 
         const customerRef = doc(db, 'customers', user.uid);
+        const userDoc = await getDoc(customerRef)
+        setName(userDoc.data().name);
         const wishlistRef = doc(collection(customerRef, 'wishlist'), productId);
         const wishlistItemSnap = await getDoc(wishlistRef);
 
@@ -41,7 +44,7 @@ const Product = ({ route, navigation }) => {
     }
   }, [productId]);
 
-  // Add this wishlist handler function
+
   const handleWishlist = async () => {
     try {
       const user = auth.currentUser;
@@ -54,12 +57,12 @@ const Product = ({ route, navigation }) => {
       const wishlistRef = doc(collection(customerRef, 'wishlist'), productId);
 
       if (isInWishlist) {
-        // Remove from wishlist
+
         await setDoc(wishlistRef, {}, { merge: true });
         setIsInWishlist(false);
         Alert.alert('Removed', `${product.name} removed from wishlist`, [{ text: 'OK' }]);
       } else {
-        // Add to wishlist
+
         await setDoc(wishlistRef, {
           productId: product.id,
           sellerId: sellerId,
@@ -182,9 +185,7 @@ const Product = ({ route, navigation }) => {
           [{ text: 'OK' }]
         );
       } else {
-        // Product doesn't exist - add new item
         await setDoc(cartRef, {
-          // productId: product.id,
           quantity: quantity,
           sellerId: sellerId,
         });
@@ -226,16 +227,14 @@ const Product = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()}>
-          <Icon name="arrow-left" size={24} color="#E7C574" />
+          <Icon name="arrow-left" size={20} color="#E7C574" />
         </Pressable>
-        <Image style={styles.logo} resizeMode="contain" source={image7} />
         <Pressable style={styles.searchButton}>
-          <Text style={styles.searchText}>
+          <TextInput style={styles.searchText}>
             <Icon name="search" size={20} color="black" /> Search For Anything
-          </Text>
+          </TextInput>
         </Pressable>
         <Icon name="bell" size={24} color="#FF9800" style={styles.bellIcon} />
       </View>
@@ -315,7 +314,7 @@ const Product = ({ route, navigation }) => {
           <Text style={styles.description}>
             {seller?.businessName ? `Sold by: ${seller.businessName}` : 'Seller info not available'}
             {'\n'}
-            {seller?.email}
+            {/* {seller?.email} */}
           </Text>
         </View>
 
@@ -336,7 +335,48 @@ const Product = ({ route, navigation }) => {
           </Text>
         </Pressable>
         <View style={styles.footerDivider} />
-        <Pressable style={styles.footerButton}>
+        <Pressable
+          style={styles.footerButton}
+          onPress={async () => {
+            try {
+              const user = auth.currentUser;
+              if (!user) {
+                Alert.alert('Login Required', 'Please log in to start a chat.');
+                return;
+              }
+
+              const userName = name;
+              const storeName = seller?.businessName;
+
+              // Unique chat ID = customerUID + sellerID
+              const chatId = `${user.uid}_${sellerId}`;
+              const chatRef = doc(db, 'chats', chatId);
+              const chatSnap = await getDoc(chatRef);
+
+              if (!chatSnap.exists()) {
+                await setDoc(chatRef, {
+                  userName: userName,
+                  userId: user.uid,
+                  storeId: sellerId,
+                  storeName: storeName,
+                  lastMessage: '',
+                  lastMessageTime: null,
+                  unread: false
+                });
+              }
+
+              navigation.navigate('TaskDetail', {
+                chatId: chatId,
+                storeName: storeName,
+                storeId: sellerId,
+              });
+
+            } catch (err) {
+              console.error('Chat creation error:', err);
+              Alert.alert('Error', 'Failed to initiate chat');
+            }
+          }}
+        >
           <Text style={styles.footerText}>
             CHAT <Icon name="comments" size={20} color="black" />
           </Text>
@@ -356,6 +396,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#000'
   },
   logo: { height: 40, width: 45 },
+
   searchButton: {
     flex: 1,
     backgroundColor: '#E7C574',
@@ -366,8 +407,9 @@ const styles = StyleSheet.create({
   },
   searchText: {
     color: '#000',
-    fontSize: 16,
-    paddingLeft: 15
+    fontSize: 12,
+    paddingBottom: 0,
+    paddingLeft: 15,
   },
   bellIcon: { padding: 5 },
   scrollContainer: { flex: 1 },

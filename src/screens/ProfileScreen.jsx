@@ -16,27 +16,26 @@ const ProfileScreen = ({ navigation }) => {
         return;
       }
 
-      // Fetch seller profile
       const userDoc = await getDoc(doc(db, 'customers', user.uid));
       if (userDoc.exists()) {
         console.log("User data:", userDoc.data());
         setName(userDoc.data().name);
       } else {
-        setError('No seller document found');
+        setError('No customer document found');
       }
 
 
     } catch (err) {
       console.error("Fetch error:", err);
-      setError('Failed to load store data');
+      setError('Failed to load customer data');
     }
   };
 
-    useEffect(() => {
-      const unsubscribe = navigation.addListener('focus', fetchUserData);
-      fetchUserData();
-      return unsubscribe;
-    }, [navigation]);
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', fetchUserData);
+    fetchUserData();
+    return unsubscribe;
+  }, [navigation]);
 
   const wishlistItems = [
     { id: "1", name: "Calligraphy Set", price: 560, image: require('./../../assets/sun.png') },
@@ -104,7 +103,7 @@ const ProfileScreen = ({ navigation }) => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>MY ORDERS</Text>
-            <Pressable style={styles.viewAllButton}>
+            <Pressable style={styles.viewAllButton} onPress={() => navigation.navigate("Orders")}>
               <Text style={styles.viewAllText}>View All Orders</Text>
               <Icon name="arrow-right" size={16} color="#E7C574" />
             </Pressable>
