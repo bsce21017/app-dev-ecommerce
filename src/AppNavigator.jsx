@@ -18,6 +18,7 @@ import OrderConfirmation from './screens/OrderConfirmation';
 import OrdersScreen from "./screens/OrdersScreen"
 import OrderDetailsScreen from './screens/OrderDetails';
 import UserSettings from './screens/userSettings';
+import OrdersReceivedScreen from './screens/OrdersReceivedScreen';
 
 
 const App = () => {
@@ -31,6 +32,7 @@ const App = () => {
                 <Stack.Screen name="SellerSignUp" component={SellerSignUp} options={{ headerShown: false }} />
                 <Stack.Screen name="UserHome" component={BottomTabs} options={{ headerShown: false }} />
                 <Stack.Screen name="SellerHome" component={BottomNavbar} options={{ headerShown: false }} />
+                <Stack.Screen name="OrdersReceived" component={OrdersReceivedScreen} options={{ headerShown: false }} />
                 <Stack.Screen name="Product" component={Product} options={{ headerShown: false }} />
                 <Stack.Screen name="AddProduct" component={AddProduct} options={{ headerShown: false }} />
                 <Stack.Screen name="ProductList" component={ProductList} options={{ headerShown: false }} />

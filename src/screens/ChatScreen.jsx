@@ -27,10 +27,10 @@ const MyChatsScreen = ({ navigation }) => {
 
           const chatsQuery = query(
             chatsRef,
-            or(
-              where('storeName', '==', businessName),
+            // or(
+              // where('storeName', '==', businessName),
               where('storeId', '==', user.uid)
-            )
+            // )
           );
 
           const unsubscribeChats = onSnapshot(

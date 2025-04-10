@@ -132,7 +132,7 @@ const AddProduct = ({ navigation }) => {
 
 
   const handleDraftPress = async () => {
-    if (!product.name || !product.price || !product.category || images.length === 0 || product.stock === 0 || product.description === "") {
+    if (!product.name || !product.price || !product.category || product.stock === 0 || product.description === "") {
       Alert.alert("Error", "Please fill all required fields");
       return;
     }
@@ -178,7 +178,7 @@ const AddProduct = ({ navigation }) => {
   };
 
   const handlePublishPress = async () => {
-    if (!product.name || !product.price || !product.category || images.length === 0 || product.stock === 0 || product.description === "") {
+    if (!product.name || !product.price || !product.category || product.stock === 0 || product.description === "") {
       Alert.alert("Error", "Please fill all the required fields and add at least one image");
       return;
     }
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   imagePlaceholder: {
-    minHeight: 100, // Ensure it has a minimum height
+    minHeight: 100, 
     borderStyle: "dashed",
     borderWidth: 2,
     borderColor: "gray",
@@ -444,7 +444,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   imageContainer: {
-    width: '23%', // 4 images per row with small gap
+    width: '23%', 
     aspectRatio: 1,
     // marginBottom: 8,
     position: 'relative',

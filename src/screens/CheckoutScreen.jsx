@@ -32,15 +32,21 @@ const CheckoutScreen = ({ navigation, route }) => {
             { console.log("document  refrence ", cartItems); }
             if (!user) throw new Error('User not logged in');
 
+            const items = cartItems.map(item => ({
+                productRef: doc(db, 'products', item.sellerId, 'published_products', item.id),
+                quantity: item.quantity,
+                sellerRef: item.sellerRef
+            }));
+            
+            const uniqueSellerRefs = Array.from(
+                new Set(items.map(item => item.sellerRef.path))
+            ).map(path => doc(db, path));
+            
             const orderData = {
                 customerRef: doc(db, 'customers', user.uid),
                 status: 'confirmed',
-
-                items: cartItems.map(item => ({
-                    productRef: doc(db, 'products', item.sellerId, 'published_products', item.id),
-                    quantity: item.quantity,
-                    sellerRef: item.sellerRef
-                })),
+                items,
+                sellerRefs: uniqueSellerRefs,
                 shippingDetails,
                 paymentMethod,
                 subtotal,
@@ -49,15 +55,12 @@ const CheckoutScreen = ({ navigation, route }) => {
                 createdAt: new Date()
             };
 
-            // Check if any item has invalid seller references
             if (orderData.items.some(item => !item.sellerRef.path)) {
                 throw new Error('Invalid seller references');
             }
 
-            // Add order to Firestore
             const orderRef = await addDoc(collection(db, 'orders'), orderData);
 
-            // Clear cart after placing the order
             const batch = writeBatch(db);
             const cartRef = collection(db, 'customers', user.uid, 'cart');
             const cartSnapshot = await getDocs(cartRef);
@@ -65,13 +68,11 @@ const CheckoutScreen = ({ navigation, route }) => {
             cartSnapshot.forEach(doc => batch.delete(doc.ref));
             await batch.commit();
 
-            // Navigate to order confirmation screen
             navigation.navigate('OrderConfirmation', { orderId: orderRef.id });
 
         } catch (error) {
             console.error('Full error object:', error);
 
-            // Enhanced error handling
             const errorMessage = error?.message
                 ? error.message.includes('indexOf')
                     ? 'Invalid product data'
