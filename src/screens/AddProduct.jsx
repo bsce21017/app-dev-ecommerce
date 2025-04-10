@@ -4,7 +4,7 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import { launchImageLibrary } from 'react-native-image-picker';
 import { collection, doc, getDocs, serverTimestamp, addDoc } from 'firebase/firestore';
 import axios from 'axios';
-import ImageResizer from '@bam.tech/react-native-image-resizer';// import mime from 'react-native-mime-types';
+import ImageResizer from '@bam.tech/react-native-image-resizer';
 
 import MultiSelectInput from './../components/MultiSelectInput';
 import { auth, db } from "./../../firebaseConfig"

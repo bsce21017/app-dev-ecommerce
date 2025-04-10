@@ -3,10 +3,24 @@ import { View, Text, FlatList, Image, Pressable, StyleSheet, SafeAreaView, Scrol
 import Icon from "react-native-vector-icons/FontAwesome";
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { auth, db } from "./../../firebaseConfig";
+import { signOut } from "firebase/auth";
+
+
 
 const ProfileScreen = ({ navigation }) => {
   const [error, setError] = useState(false);
   const [name, setName] = useState('');
+  const [wishlistlength, setWishListLength] = useState('');
+  const [profileImage, setProfileImage] = useState(null);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      navigation.replace('CustomerSignIn'); 
+    } catch (err) {
+      console.error("Sign out error:", err);
+    }
+  };
 
   const fetchUserData = async () => {
     try {
@@ -20,6 +34,11 @@ const ProfileScreen = ({ navigation }) => {
       if (userDoc.exists()) {
         // console.log("User data:", userDoc.data());
         setName(userDoc.data().name);
+        setProfileImage(userDoc.data().profileImage);
+        const wishlistRef = collection(db, 'customers', user.uid, 'wishlist');
+        const wishlistSnapshot = await getDocs(wishlistRef);
+        const wishlistData = wishlistSnapshot.docs.map(doc => doc.data());
+        setWishListLength(wishlistData.length);
       } else {
         setError('No customer document found');
       }
@@ -76,18 +95,31 @@ const ProfileScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container}>
-        {/* Header */}
         <View style={styles.header}>
           <View style={styles.profileHeader}>
-            <Text style={styles.profileName}>{name || "Your Name"}</Text>
-            <Pressable>
-              <Icon name="gear" size={20} color="#E7C574" />
-            </Pressable>
+            <View style={styles.profileInfo}>
+              {profileImage ? (
+                <Image source={{ uri: profileImage }} style={styles.profileImage} />
+              ) : (
+                <View style={[styles.profileImage, styles.imagePlaceholder]}>
+                  <Icon name="user" size={20} color="#E7C574" />
+                </View>
+              )}
+              <Text style={styles.profileName}>{name || "Your Name"}</Text>
+            </View>
+            <View style={styles.actionIcons}>
+              <Pressable onPress={() => navigation.navigate("UserSettings")}>
+                <Icon name="gear" size={20} color="#E7C574" style={{ marginRight: 16 }} />
+              </Pressable>
+              <Pressable onPress={handleSignOut}>
+                <Icon name="sign-out" size={20} color="#E7C574" />
+              </Pressable>
+            </View>
           </View>
 
           <View style={styles.profileTabs}>
             <Pressable style={styles.profileTab}>
-              <Text style={styles.profileTabText}>WISHLIST</Text>
+              <Text style={styles.profileTabText}>WISHLIST: {wishlistlength}</Text>
             </Pressable>
             <View style={styles.tabDivider} />
             <Pressable style={styles.profileTab}>
@@ -198,6 +230,26 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#636363',
   },
+  profileInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  profileImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+    backgroundColor: '#E7C574',
+  },
+  imagePlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',

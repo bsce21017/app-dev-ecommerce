@@ -5,6 +5,11 @@ import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
 const CustomerSignIn = ({ navigation }) => {
+
+    if (auth.currentUser) {
+        navigation.navigate('UserHome');
+    }
+
     const [form, setForm] = useState({
         email: '',
         password: ''

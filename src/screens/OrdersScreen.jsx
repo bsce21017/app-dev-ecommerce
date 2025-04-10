@@ -168,13 +168,14 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
         paddingHorizontal: 5,
         borderRadius: 20,
+        marginBottom: 30,
     },
     statusText: {
-        fontSize: 12,
+        fontSize: 10,
         fontWeight: 'bold',
     },
     confirmedStatus: {
-        backgroundColor: 'rgba(255, 152, 0, 0.2)',
+        backgroundColor: 'rgba(255, 153, 0, 0.4)',
     },
     shippedStatus: {
         backgroundColor: 'rgba(76, 175, 80, 0.2)',

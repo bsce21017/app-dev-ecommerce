@@ -256,7 +256,7 @@ const Wishlist = ({ navigation }) => {
             style={styles.footerButton}
             onPress={handleAddAllToCart}
           >
-            <Text style={styles.footerButtonText}>ADD ALL TO CART</Text>
+            <Text style={styles.footerButtonText}>ADD TO CART</Text>
           </Pressable>
         )}
       </View>
@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E7C574',
     borderRadius: 4,
     paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: 6,
     marginRight: 12,
   },
   addToCartText: {
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: '#E7C574',
-    paddingVertical: 16,
+    paddingVertical: 5,
     alignItems: 'center',
     justifyContent: 'center',
   },

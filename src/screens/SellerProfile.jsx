@@ -1,21 +1,100 @@
-import React from "react";
-import { SafeAreaView, View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, Dimensions } from "react-native";
+import React, { useState, useEffect } from "react";
+import { SafeAreaView, View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, Dimensions, ActivityIndicator } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import LinearGradient from 'react-native-linear-gradient';
+import {signOut } from 'firebase/auth';
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
+import { db, auth } from '../../firebaseConfig';
+import { useNavigation } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 
 const SellerProfile = ({ navigation }) => {
-    const sellerName = "HLW8trDg";
-    const sellerID = "PK2NBWEMR0X";
-    const daysActive = 17;
-    const productsCount = 42;
-    const rating = 4.7;
+    const [sellerData, setSellerData] = useState(null);
+    const [productsCount, setProductsCount] = useState(0);
+    const [loading, setLoading] = useState(true);
+    const nav = navigation
+
+    useEffect(() => {
+        const fetchSellerData = async () => {
+            try {
+                const user = auth.currentUser;
+                if (!user) return;
+
+                const sellerRef = doc(db, 'seller', user.uid);
+                const sellerSnap = await getDoc(sellerRef);
+
+                if (sellerSnap.exists()) {
+                    const data = sellerSnap.data();
+                    setSellerData({
+                        ...data,
+                        id: sellerSnap.id,
+                        createdAt: data.createdAt?.toDate() || new Date()
+                    });
+
+                    const productsQuery = query(
+                        collection(db, 'products', user.uid, 'published_products')
+                    );
+                    const productsSnapshot = await getDocs(productsQuery);
+                    setProductsCount(productsSnapshot.size);
+                }
+            } catch (error) {
+                console.error('Error fetching seller data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchSellerData();
+    }, []);
+
+    const calculateDaysActive = (createdAt) => {
+        if (!createdAt) return 0;
+        const createdDate = new Date(createdAt);
+        const today = new Date();
+        const diffTime = Math.abs(today - createdDate);
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    };
+
+    const handleLogout = async () => {
+        try {
+            await signOut(auth);
+            nav.reset({
+                index: 0,
+                routes: [{ name: 'SellerSignUp' }],
+            });
+        } catch (error) {
+            console.error('Logout error:', error);
+            Alert.alert('Error', 'Failed to log out');
+        }
+    };
+
+    if (loading) {
+        return (
+            <SafeAreaView style={styles.safeArea}>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#F0C14B" />
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    if (!sellerData) {
+        return (
+            <SafeAreaView style={styles.safeArea}>
+                <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>Seller data not found</Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    const daysActive = calculateDaysActive(sellerData.createdAt);
+    const rating = sellerData.rating || 0; // Default to 0 if no rating exists
 
     return (
         <SafeAreaView style={styles.safeArea}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
-                {/* Profile Header */}
                 <LinearGradient 
                     colors={['#1E293B', '#0B0E13']}
                     style={styles.profileHeader}
@@ -31,8 +110,9 @@ const SellerProfile = ({ navigation }) => {
                             <Icon name="pencil" size={14} color="#fff" />
                         </TouchableOpacity>
                     </View>
-                    <Text style={styles.name}>{sellerName}</Text>
-                    <Text style={styles.subtext}>Seller ID: {sellerID}</Text>
+                    <Text style={styles.name}>{sellerData.businessName}</Text>
+                    <Text style={styles.subtext}>Seller ID:</Text>
+                    <Text style={styles.subtext}>{sellerData.id}</Text>
                     
                     <View style={styles.statsContainer}>
                         <View style={styles.statItem}>
@@ -50,35 +130,10 @@ const SellerProfile = ({ navigation }) => {
                     </View>
                 </LinearGradient>
 
-                
-                {/* <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Seller Tools</Text>
-                    <View style={styles.featuresGrid}>
-                        {[
-                            { icon: 'chart-line', title: 'Analytics', color: '#4CAF50' },
-                            { icon: 'currency-usd', title: 'Income', color: '#8BC34A' },
-                            { icon: 'package-variant', title: 'Inventory', color: '#FF9800' },
-                            { icon: 'message-text', title: 'Chats', color: '#2196F3' },
-                            { icon: 'truck-delivery', title: 'Orders', color: '#9C27B0' },
-                            { icon: 'account-group', title: 'Customers', color: '#E91E63' },
-                        ].map((item, index) => (
-                            <TouchableOpacity key={index} style={styles.featureItem}>
-                                <View style={[styles.featureIcon, {backgroundColor: item.color}]}>
-                                    <Icon name={item.icon} size={20} color="#fff" />
-                                </View>
-                                <Text style={styles.featureText}>{item.title}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                </View> */}
-
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Settings</Text>
                     {[
                         { icon: 'cog', title: 'Account Settings' },
-                        // { icon: 'heart-pulse', title: 'Account Health' },
-                        // { icon: 'bell', title: 'Notifications' },
-                        // { icon: 'shield-account', title: 'Privacy' },
                         { icon: 'translate', title: 'Language' },
                     ].map((item, index) => (
                         <TouchableOpacity key={index} style={styles.menuItem}>
@@ -105,7 +160,7 @@ const SellerProfile = ({ navigation }) => {
                     ))}
                 </View>
 
-                <TouchableOpacity style={styles.logoutButton}>
+                <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
                     <Icon name="logout" size={20} color="#D9534F" />
                     <Text style={styles.logoutText}>Log Out</Text>
                 </TouchableOpacity>
@@ -163,6 +218,7 @@ const styles = StyleSheet.create({
     subtext: {
         color: "#94A3B8",
         fontSize: 14,
+        marginBottom: -10,
     },
     statsContainer: {
         flexDirection: 'row',
