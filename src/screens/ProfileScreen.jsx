@@ -18,7 +18,7 @@ const ProfileScreen = ({ navigation }) => {
 
       const userDoc = await getDoc(doc(db, 'customers', user.uid));
       if (userDoc.exists()) {
-        console.log("User data:", userDoc.data());
+        // console.log("User data:", userDoc.data());
         setName(userDoc.data().name);
       } else {
         setError('No customer document found');

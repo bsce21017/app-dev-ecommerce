@@ -16,6 +16,8 @@ import EditProduct from './screens/EditProduct';
 import CheckoutScreen from './screens/CheckoutScreen';
 import OrderConfirmation from './screens/OrderConfirmation';
 import OrdersScreen from "./screens/OrdersScreen"
+import OrderDetailsScreen from './screens/OrderDetails';
+
 
 const App = () => {
     const Stack = createStackNavigator();
@@ -37,6 +39,8 @@ const App = () => {
                 <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ headerShown: false }}/>
                 <Stack.Screen name="OrderConfirmation" component={OrderConfirmation} options={{ headerShown: false }}/>
                 <Stack.Screen name="Orders" component={OrdersScreen} options={{ headerShown: false }}/>
+                <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} options={{ headerShown: false }}/>
+
             </Stack.Navigator>
         </NavigationContainer>
     );

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, Pressable } from 'react-native';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs, doc, orderBy } from 'firebase/firestore';
 import { app } from '../../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 
 const OrdersScreen = () => {
     const [orders, setOrders] = useState([]);
@@ -22,28 +23,19 @@ const OrdersScreen = () => {
                     return;
                 }
 
-                const customerRef = `customers/${user.uid}`;
-
-                // Query orders where customerRef matches
+                const customerRef = doc(db, 'customers', user.uid);
                 const q = query(
                     collection(db, 'orders'),
-                    where('customerRef.path', '==', customerRef),
-                    // Optional: order by creation date
-                    // orderBy('createdAt', 'desc')
+                    where('customerRef', '==', customerRef),
+                    orderBy('createdAt', 'desc')
                 );
 
                 const querySnapshot = await getDocs(q);
-                const ordersData = [];
-
-                querySnapshot.forEach((doc) => {
-                    ordersData.push({
-                        id: doc.id,
-                        ...doc.data(),
-                        // Convert Firestore timestamp to JS Date
-                        createdAt: doc.data().createdAt?.toDate() || new Date()
-                    });
-                });
-
+                const ordersData = querySnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                    createdAt: doc.data().createdAt?.toDate() || new Date()
+                }));
                 setOrders(ordersData);
             } catch (error) {
                 console.error('Error fetching orders:', error);
@@ -61,25 +53,29 @@ const OrdersScreen = () => {
             onPress={() => navigation.navigate('OrderDetails', { orderId: item.id })}
         >
             <View style={styles.orderHeader}>
-                <Text style={styles.orderId}>Order #{item.id.substring(0, 8)}</Text>
-                <Text style={styles.orderDate}>
-                    {item.createdAt.toLocaleDateString()}
-                </Text>
-            </View>
-
-            <View style={styles.orderStatusContainer}>
-                <Text style={[
-                    styles.orderStatus,
+                <View>
+                    <Text style={styles.orderNumber}>ORDER #{item.id.substring(0, 8)}</Text>
+                    <Text style={styles.orderDate}>
+                        {item.createdAt.toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                        })}
+                    </Text>
+                </View>
+                <View style={[styles.statusBadge, 
                     item.status === 'shipped' && styles.shippedStatus,
-                    item.status === 'confirmed' && styles.confirmedStatus
+                    item.status === 'confirmed' && styles.confirmedStatus,
+                    item.status === 'cancelled' && styles.cancelledStatus,
+                    item.status === 'delivered' && styles.deliveredStatus
                 ]}>
-                    {item.status.toUpperCase()}
-                </Text>
+                    <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
+                </View>
             </View>
 
             <View style={styles.orderFooter}>
-                <Text style={styles.orderTotal}>PKR {item.total.toFixed(2)}</Text>
-                <Icon name="chevron-right" size={16} color="#666" />
+                <Text style={styles.totalLabel}>TOTAL</Text>
+                <Text style={styles.totalValue}>PKR {item.total.toFixed(2)}</Text>
             </View>
         </Pressable>
     );
@@ -94,12 +90,22 @@ const OrdersScreen = () => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.screenTitle}>My Orders</Text>
+            <View style={styles.header}>
+                <Pressable 
+                    style={styles.backButton}
+                    onPress={() => navigation.goBack()}
+                >
+                    <Icon name="arrow-left" size={20} color="#E7C574" />
+                </Pressable>
+                <Text style={styles.screenTitle}>MY ORDERS</Text>
+                <FontAwesome5 name="shopping-bag" size={20} color="#E7C574" />
+            </View>
 
             {orders.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                    <Icon name="shopping-bag" size={50} color="#E7C574" />
+                    <FontAwesome5 name="box-open" size={50} color="#E7C574" />
                     <Text style={styles.emptyText}>No orders yet</Text>
+                    <Text style={styles.emptySubtext}>Your orders will appear here</Text>
                 </View>
             ) : (
                 <FlatList
@@ -107,6 +113,7 @@ const OrdersScreen = () => {
                     renderItem={renderOrderItem}
                     keyExtractor={(item) => item.id}
                     contentContainerStyle={styles.listContent}
+                    showsVerticalScrollIndicator={false}
                 />
             )}
         </View>
@@ -116,64 +123,84 @@ const OrdersScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#000',
         padding: 16,
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 25,
+        paddingHorizontal: 5,
+    },
+    backButton: {
+        padding: 8,
     },
     screenTitle: {
-        fontSize: 24,
+        color: '#E7C574',
+        fontSize: 20,
         fontWeight: 'bold',
-        marginBottom: 20,
-        color: '#333',
+        letterSpacing: 1,
     },
     orderCard: {
-        backgroundColor: '#fff',
-        borderRadius: 8,
-        padding: 16,
-        marginBottom: 12,
-        borderWidth: 1,
-        borderColor: '#eee',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 2,
+        backgroundColor: '#111',
+        borderRadius: 12,
+        padding: 20,
+        marginBottom: 15,
     },
     orderHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 8,
+        alignItems: 'center',
+        marginBottom: 15,
     },
-    orderId: {
+    orderNumber: {
+        color: '#E7C574',
+        fontSize: 16,
         fontWeight: 'bold',
-        color: '#333',
+        marginBottom: 4,
     },
     orderDate: {
-        color: '#666',
+        color: '#888',
+        fontSize: 12,
     },
-    orderStatusContainer: {
-        marginBottom: 12,
+    statusBadge: {
+        paddingVertical: 6,
+        paddingHorizontal: 5,
+        borderRadius: 20,
     },
-    orderStatus: {
-        color: '#E7C574',
+    statusText: {
+        fontSize: 12,
         fontWeight: 'bold',
     },
-    shippedStatus: {
-        color: '#4CAF50',
-    },
     confirmedStatus: {
-        color: '#FF9800',
+        backgroundColor: 'rgba(255, 152, 0, 0.2)',
+    },
+    shippedStatus: {
+        backgroundColor: 'rgba(76, 175, 80, 0.2)',
+    },
+    cancelledStatus: {
+        backgroundColor: 'rgba(198, 40, 40, 0.2)',
+    },
+    deliveredStatus: {
+        backgroundColor: 'rgba(0, 123, 143, 0.2)',
     },
     orderFooter: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        paddingTop: 15,
         borderTopWidth: 1,
-        borderTopColor: '#eee',
-        paddingTop: 12,
+        borderTopColor: '#222',
     },
-    orderTotal: {
+    totalLabel: {
+        color: '#888',
+        fontSize: 14,
+    },
+    totalValue: {
+        color: '#E7C574',
+        fontSize: 18,
         fontWeight: 'bold',
-        color: '#333',
     },
     emptyContainer: {
         flex: 1,
@@ -181,14 +208,21 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     emptyText: {
-        marginTop: 16,
+        color: '#E7C574',
         fontSize: 18,
-        color: '#666',
+        marginTop: 15,
+        fontWeight: 'bold',
+    },
+    emptySubtext: {
+        color: '#888',
+        fontSize: 14,
+        marginTop: 5,
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: '#000',
     },
     listContent: {
         paddingBottom: 20,
