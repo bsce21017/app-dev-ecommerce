@@ -158,7 +158,7 @@ const SellerStore = () => {
               <TouchableOpacity
                 key={index}
                 style={styles.orderItem}
-                onPress={() => navigation.navigate('Orders', { filter: item.label })}
+                onPress={() => navigation.navigate('OrdersReceived', { filter: item.label })}
               >
                 <IconA name={item.icon} size={24} color="#F0C14B" />
                 <Text style={styles.orderText}>{item.label}</Text>

@@ -5,6 +5,10 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } f
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 const SellerSignUp = ({ navigation }) => {
+    if (auth.currentUser) {
+        navigation.replace('SellerHome');
+    }
+
     const [isLoading, setIsLoading] = useState(false);
     const [form, setForm] = useState({
         email: '',

@@ -2,8 +2,11 @@ import React, { useState, useEffect } from "react";
 import { SafeAreaView, View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, Dimensions, ActivityIndicator } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import LinearGradient from 'react-native-linear-gradient';
-import {signOut } from 'firebase/auth';
-import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
+import { collection, doc, getDoc, getDocs, query, where, updateDoc } from 'firebase/firestore';
+import { launchImageLibrary } from 'react-native-image-picker';
+import ImageResizer from '@bam.tech/react-native-image-resizer';
+import axios from 'axios';
 import { db, auth } from '../../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 
@@ -29,7 +32,8 @@ const SellerProfile = ({ navigation }) => {
                     setSellerData({
                         ...data,
                         id: sellerSnap.id,
-                        createdAt: data.createdAt?.toDate() || new Date()
+                        createdAt: data.createdAt?.toDate() || new Date(),
+                        profileImage: data.profileImage || null
                     });
 
                     const productsQuery = query(
@@ -47,6 +51,60 @@ const SellerProfile = ({ navigation }) => {
 
         fetchSellerData();
     }, []);
+
+    const compressImage = async (uri) => {
+        try {
+            const result = await ImageResizer.resize({
+                uri,
+                width: 1200,
+                height: 1200,
+                compressFormat: 'JPEG',
+                quality: 70,
+                mode: 'contain'
+            });
+            return result.uri;
+        } catch (error) {
+            console.warn('Compression failed, using original:', error);
+            return uri;
+        }
+    };
+
+    const handleImageUpload = async () => {
+        try {
+            const result = await launchImageLibrary({ mediaType: 'photo', quality: 0.7 });
+
+            if (result.didCancel || !result.assets || result.assets.length === 0) return;
+
+            const imageUri = result.assets[0].uri;
+            const compressedUri = await compressImage(imageUri);
+            const formData = new FormData();
+            formData.append('image', {
+                uri: compressedUri,
+                name: 'profile.jpg',
+                type: 'image/jpeg',
+            });
+
+            const imgbbApiKey = '154d0923e02aa6b645443b5e26257bab';
+            const uploadResponse = await axios.post(`https://api.imgbb.com/1/upload?key=${imgbbApiKey}`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            const imageUrl = uploadResponse.data.data.url;
+
+            const sellerRef = doc(db, 'seller', auth.currentUser.uid);
+            await updateDoc(sellerRef, {
+                profileImage: imageUrl
+            });
+
+            setSellerData(prev => ({ ...prev, profileImage: imageUrl }));
+        } catch (error) {
+            console.error('Image upload failed:', error);
+            Alert.alert('Error', 'Failed to upload image');
+        }
+    };
+
 
     const calculateDaysActive = (createdAt) => {
         if (!createdAt) return 0;
@@ -95,25 +153,32 @@ const SellerProfile = ({ navigation }) => {
     return (
         <SafeAreaView style={styles.safeArea}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
-                <LinearGradient 
+                <LinearGradient
                     colors={['#1E293B', '#0B0E13']}
                     style={styles.profileHeader}
-                    start={{x: 0, y: 0}}
-                    end={{x: 1, y: 1}}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
                 >
                     <View style={styles.avatarContainer}>
-                        <Image 
-                            source={require("./../../assets/frame.png")} 
-                            style={styles.avatar} 
+                        <Image
+                            source={
+                                sellerData.profileImage
+                                    ? { uri: sellerData.profileImage }
+                                    : require("./../../assets/frame.png")
+                            }
+                            style={styles.avatar}
                         />
-                        <TouchableOpacity style={styles.editIcon}>
+                        {loading && <ActivityIndicator size="small" color="#F0C14B" />}
+                        {/* <Icon name="camera" size={24} color="#F0C14B" style={{ position: 'absolute', bottom: 10, right: 10 }} />     */}
+
+                        <TouchableOpacity style={styles.editIcon} onPress={handleImageUpload}>
                             <Icon name="pencil" size={14} color="#fff" />
                         </TouchableOpacity>
                     </View>
                     <Text style={styles.name}>{sellerData.businessName}</Text>
                     <Text style={styles.subtext}>Seller ID:</Text>
                     <Text style={styles.subtext}>{sellerData.id}</Text>
-                    
+
                     <View style={styles.statsContainer}>
                         <View style={styles.statItem}>
                             <Text style={styles.statValue}>{daysActive}</Text>
@@ -144,7 +209,7 @@ const SellerProfile = ({ navigation }) => {
                     ))}
                 </View>
 
-                <View style={styles.section}>
+                {/* <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Support</Text>
                     {[
                         { icon: 'chat', title: 'Live Chat' },
@@ -158,7 +223,7 @@ const SellerProfile = ({ navigation }) => {
                             <Icon name="chevron-right" size={22} color="#666" />
                         </TouchableOpacity>
                     ))}
-                </View>
+                </View> */}
 
                 <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
                     <Icon name="logout" size={20} color="#D9534F" />
